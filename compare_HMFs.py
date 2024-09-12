@@ -32,8 +32,8 @@ plt.title('Halo Mass Function')
 plt.legend()
 
 # Save the plot to a file
-out_dir=usr_path + 'pp_runs/python/'
-out_file = out_dir + 'HMF_ntile2_nmesh256.png'
+out_dir=os.getcwd()
+out_file = os.path.join(out_dir, 'HMF_ntile1_nmesh512.png')
 plt.savefig(out_file)
 print(f"Saved output in ", out_file)
 
