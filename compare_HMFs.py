@@ -4,14 +4,20 @@ sys.path.insert(0, usr_path+'peakpatch/python')
 from peakpatchtools import PeakPatch
 
 
+#run2_label = 'PeakPatch (IPR)'
 
 # ------------------ PARTS CHANGING BEGIN ----------------------
 #run1_path = usr_path + 'pp_runs/interface_run1ic_run1/'
-run1_path = usr_path + 'pp_runs/interface_hpkvd_run_control/'
-run2_path = usr_path + 'pp_runs/interface_hpkvd_run1/'
+#run1_path = usr_path + 'pp_runs/interface_hpkvd_run_control/'
+run1_path = usr_path + 'data/2024-09/cambridge_run_2048/'
+run2_path = usr_path + 'data/2024-09/cambridge_run_2048/'
 
-run1_label = 'PeakPatch (Good)'
-run2_label = 'PeakPatch (IPR)'
+#run1_label = 'PeakPatch (Good)'
+#run1_label = "z=11(?) 2048^3 cells 75 Mpc run (Rsmooth_max=1.577)"
+run1_label = "2048 run"
+#run2_label = 'PeakPatch (IPR)'
+#run2_label = 'z=11(?) 4096^3 cells 6.4 Mpc run (Rsmooth_max=0.0668)'
+run2_label = run1_label
 # ------------------ PARTS CHANGING END ------------------------
 
 
