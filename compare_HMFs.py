@@ -1,4 +1,5 @@
 usr_path = '/home/vasilii/research/software_src/'
+usr_path2 = '/home/vasilii/research/sims/PeakPatch/'
 import os, sys, numpy as np, matplotlib.pyplot as plt
 sys.path.insert(0, usr_path+'peakpatch/python')
 from peakpatchtools import PeakPatch
@@ -8,16 +9,17 @@ from peakpatchtools import PeakPatch
 
 # ------------------ PARTS CHANGING BEGIN ----------------------
 #run1_path = usr_path + 'pp_runs/interface_run1ic_run1/'
-#run1_path = usr_path + 'pp_runs/interface_hpkvd_run_control/'
-run1_path = usr_path + 'data/2024-09/cambridge_run_2048/'
-run2_path = usr_path + 'data/2024-09/cambridge_run_2048/'
+run1_path = usr_path2 + 'pp_runs/hpkvd-interface-run/'
+#run1_path = usr_path + 'data/2024-09/cambridge_run_2048/'
+#run2_path = usr_path + 'data/2024-09/cambridge_run_2048/'
+run2_path = usr_path2 + 'pp_runs/music-interface-run-bbks/'
 
 #run1_label = 'PeakPatch (Good)'
 #run1_label = "z=11(?) 2048^3 cells 75 Mpc run (Rsmooth_max=1.577)"
-run1_label = "2048 run"
+run1_label = "hpkvd run"
 #run2_label = 'PeakPatch (IPR)'
 #run2_label = 'z=11(?) 4096^3 cells 6.4 Mpc run (Rsmooth_max=0.0668)'
-run2_label = run1_label
+run2_label = "music run (BBKS)"
 # ------------------ PARTS CHANGING END ------------------------
 
 
@@ -30,10 +32,13 @@ run2 =  PeakPatch(run_dir=run2_path, params_file=run2_path+'param/parameters.ini
 # END IMPORT RUN
 
 # Adding halos for both runs
-run1.add_halos()
-run2.add_halos()
+#run1.add_halos()
+#run2.add_halos()
+run1.add_field(field_type='rhog')
+run2.add_field(field_type='rhog')
 print('Halos added for both runs')
 
+"""
 # Calculating halo mass functions
 hist_run1, bin_edges_run1 = run1.hmf(hmf_type='dn')
 hist_run2, bin_edges_run2 = run2.hmf(hmf_type='dn')
@@ -71,22 +76,49 @@ axs[0].legend()
 X, Y = np.meshgrid(xedges_run1, yedges_run1)
 hist2d_run1 = axs[1].pcolormesh(X, Y, halo_hist_run1.T, shading='auto', cmap='Reds')
 fig.colorbar(hist2d_run1, ax=axs[1], label='Count')
-axs[1].set_xlabel('X Property')
-axs[1].set_ylabel('Y Property')
+axs[1].set_xlabel('X')
+axs[1].set_ylabel('Y')
 axs[1].set_title(f"2D Histogram of Halo Properties for {run1_label}")
 
 # Subplot 3: 2D Histogram for PeakPatch
 X, Y = np.meshgrid(xedges_run2, yedges_run2)
 hist2d_run2 = axs[2].pcolormesh(X, Y, halo_hist_run2.T, shading='auto', cmap='Blues')
 fig.colorbar(hist2d_run2, ax=axs[2], label='Count')
-axs[2].set_xlabel('X Property')
-axs[2].set_ylabel('Y Property')
+axs[2].set_xlabel('X')
+axs[2].set_ylabel('Y')
 axs[2].set_title(f"2D Histogram of Halo Properties for {run2_label}")
 
 # Save the entire figure
-out_dir = os.getcwd()
-out_file = os.path.join(out_dir, 'Halo_Analysis_All_Plots.png')
 plt.savefig(out_file)
 print(f"Saved all plots in {out_file}")
 
 plt.show()
+"""
+
+
+fig, axs = plt.subplots(figsize=(10, 20))  # 3 plots in one column
+
+run1.plot_field_slice(fig, axs, field_type='rhog', intercept=0)
+run2.plot_field_slice(fig, axs, field_type='rhog', intercept=0)
+
+## Subplot 2: 2D Histogram for MUSIC
+#X, Y = np.meshgrid(xedges_run1, yedges_run1)
+#dhist2d_run1 = axs[1].pcolormesh(X, Y, del_lin_hist_run1.T, shading='auto', cmap='Reds')
+#fig.colorbar(dhist2d_run1, ax=axs[1], label='Count')
+#axs[5].set_xlabel('X')
+#axs[5].set_ylabel('Y')
+#axs[5].set_title(f"2D Histogram of Density for {run1_label}")
+#
+## Subplot 3: 2D Histogram for PeakPatch
+#X, Y = np.meshgrid(xedges_run2, yedges_run2)
+#dhist2d_run2 = axs[2].pcolormesh(X, Y, del_lin_hist_run2.T, shading='auto', cmap='Blues')
+#fig.colorbar(dhist2d_run2, ax=axs[2], label='Count')
+#axs[6].set_xlabel('X')
+#axs[6].set_ylabel('Y')
+#axs[6].set_title(f"2D Histogram of Density for {run2_label}")
+
+out_dir = os.getcwd()
+out_dir = "/home/vasilii/research/notes/2024/10/03/figures"
+out_file = os.path.join(out_dir, 'Halo_Analysis_All_Plots.png')
+
+plt.savefig(out_file)
