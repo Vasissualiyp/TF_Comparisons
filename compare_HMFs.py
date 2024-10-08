@@ -1,19 +1,30 @@
 usr_path = '/home/vasilii/research/software_src/'
-usr_path2 = '/home/vasilii/research/sims/PeakPatch/'
+usr_path_vas= '/home/vasilii/research/sims/PeakPatch/'
+usr_path_cita = '/fs/lustre/scratch/vpustovoit/PeakPatch/'
 import os, sys, numpy as np, matplotlib.pyplot as plt, matplotlib.gridspec as gridspec
 sys.path.insert(0, usr_path+'peakpatch/python')
 from peakpatchtools import PeakPatch
+
+machine = 'cita'
+
+
+if machine == 'cita':
+    total_usr_path = usr_path_cita
+    sims_dir = usr_path_cita
+elif machine == 'vas':
+    total_usr_path = usr_path_vas
+    sims_dir = usr_path2
 
 
 #run2_label = 'PeakPatch (IPR)'
 
 # ------------------ PARTS CHANGING BEGIN ----------------------
 #run1_path = usr_path + 'pp_runs/interface_run1ic_run1/'
-run1_path = usr_path2 + 'pp_runs/hpkvd-interface-run/'
+run1_path = total_usr_path + 'pp_runs/hpkvd-interface-run/'
 #run1_path = usr_path + 'data/2024-09/cambridge_run_2048/'
 #run2_path = usr_path + 'data/2024-09/cambridge_run_2048/'
-#run2_path = usr_path2 + 'pp_runs/music-interface-run-bbks/'
-run2_path = usr_path2 + 'pp_runs/music-interface-run/'
+#run2_path = total_usr_path + 'pp_runs/music-interface-run-bbks/'
+run2_path = total_usr_path + 'pp_runs/music-interface-run/'
 
 #run1_label = 'PeakPatch (Good)'
 #run1_label = "z=11(?) 2048^3 cells 75 Mpc run (Rsmooth_max=1.577)"
@@ -94,10 +105,13 @@ axs[2,0].set_title(f"2D Histogram of Halo Properties for {run2_label}")
 out_dir = os.getcwd()
 out_dir = "/home/vasilii/research/notes/2024/10/03/figures"
 
-field_file_run1="/home/vasilii/research/sims/PeakPatch/pp_runs/hpkvd-interface-run/fields/Fvec_640Mpc_Cambridge"
-field_file_run2="/home/vasilii/research/sims/PeakPatch/pp_runs/music-interface-run/fields/Fvec_640Mpc_MUSIC"
+#field_file_run1="/home/vasilii/research/sims/PeakPatch/pp_runs/hpkvd-interface-run/fields/Fvec_640Mpc_Cambridge"
+#field_file_run2="/home/vasilii/research/sims/PeakPatch/pp_runs/music-interface-run/fields/Fvec_640Mpc_MUSIC"
+field_file_run1 = sims_dir + "pp_runs/hpkvd-interface-run/fields/Fvec_640Mpc_Cambridge"
+field_file_run2 = sims_dir + "pp_runs/music-interface-run/fields/Fvec_640Mpc_MUSIC"
 
-#run1.get_power_spectrum(field_file=field_file_run1)
+run1.get_power_spectrum(field_file=field_file_run1, script_type='f90')
+run2.get_power_spectrum(field_file=field_file_run2, script_type='f90')
 run1.plot_field_slice(fig, axs[1,1], field_type='rhog', intercept=0)
 run2.plot_field_slice(fig, axs[2,1], field_type='rhog', intercept=0)
 
