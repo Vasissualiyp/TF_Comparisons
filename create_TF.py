@@ -5,17 +5,22 @@ from camb import model
 import matplotlib.pyplot as plt
 # -------------------------------
 
-output_type = 13 # Only options are 7 (old one, whose purpose is not clear to me), and 13 (new one, accepted by MUSIC)
+# Only options are 7 (old one, whose purpose is not clear to me), 
+# and 13 (new one, accepted by MUSIC)
+output_type = 13 
+output_file = 'output.dat'
 
+# Run parameters
 h = 0.6735
-camb_factor = 1 # (2 * np.pi * h)**3
-
 H0    = 100*h
 omch2 = 0.2607  #* h**2 # Omega_cdm * h^2
 ombh2 = 0.04897 #* h**2 # Omega_baryon * h^2
 omk   = 0.0
 mnu   = 0.0
 tau   = 0.0544
+
+# A factor I played with for scaling
+camb_factor = 1 # (2 * np.pi * h)**3
 
 # Set up the parameters
 pars = camb.CAMBparams()
@@ -49,14 +54,34 @@ v_b_cdm = transfer.transfer_data[12,:,0] # relative baryon-cdm velocity
 # Save to .dat file - PeakPatch
 if output_type == 7:
     header = 'k/h Delta_CDM/k2 Delta_b/k2 Delta_g/k2 Delta_nu/k2 Delta_tot/k2 Phi'
-    data = np.vstack([k, delta_cdm/k**2, delta_b/k**2, delta_g/k**2, delta_nu/k**2, delta_tot/k**2, phi]).T
+    data = np.vstack([k,
+                      delta_cdm/k**2,
+                      delta_b/k**2,
+                      delta_g/k**2,
+                      delta_nu/k**2,
+                      delta_tot/k**2,
+                      phi
+                    ]).T
+# Save to .dat file - MUSIC
 elif output_type == 13:
-    header = 'k/h, delta_cdm, delta_b, delta_g, delta_nu, delta_num, delta_tot, delta_nonu, delta_totde, phi, v_cdm, v_b, v_b_cdm'
-    data = np.vstack([k, delta_cdm/camb_factor, delta_b/camb_factor, delta_g/camb_factor, delta_nu/camb_factor, delta_num/camb_factor,
-                      delta_tot/camb_factor, delta_nonu/camb_factor, delta_totde/camb_factor, phi/camb_factor,
-                      v_cdm/camb_factor, v_b/camb_factor, v_b_cdm/camb_factor]).T
+    header = 'k, delta_cdm, delta_b, delta_g, delta_nu, delta_num, delta_tot, delta_nonu, delta_totde, phi, v_cdm, v_b, v_b_cdm'
+    data = np.vstack([k * h,
+                      delta_cdm/camb_factor,
+                      delta_b/camb_factor,
+                      delta_g/camb_factor,
+                      delta_nu/camb_factor,
+                      delta_num/camb_factor,
+                      delta_tot/camb_factor,
+                      delta_nonu/camb_factor,
+                      delta_totde/camb_factor,
+                      phi/camb_factor,
+                      v_cdm/camb_factor,
+                      v_b/camb_factor,
+                      v_b_cdm/camb_factor
+                    ]).T
 else:
     print(f"Unsupported output type: {output_type}")
-np.savetxt('output.dat', data, header=header, fmt='%0.8e')
 
-print("Data saved to output.dat.")
+
+np.savetxt(output_file, data, header=header, fmt='%0.8e')
+print(f"Data saved to {output_file}")

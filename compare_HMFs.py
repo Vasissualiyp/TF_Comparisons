@@ -27,11 +27,12 @@ else:
 
 # ------------------ PARTS CHANGING BEGIN ----------------------
 #run1_path = usr_path + 'pp_runs/interface_run1ic_run1/'
-run1_path = total_usr_path + 'pp_runs/hpkvd-interface-run/'
+run1_path = total_usr_path + 'pp_runs/hpkvd-interface-run2/'
 #run1_path = usr_path + 'data/2024-09/cambridge_run_2048/'
 #run2_path = usr_path + 'data/2024-09/cambridge_run_2048/'
 #run2_path = total_usr_path + 'pp_runs/music-interface-run-bbks/'
 run2_path = total_usr_path + 'pp_runs/music-interface-run/'
+run2_path = total_usr_path + 'pp_runs/music-interface-run2/'
 
 #run1_label = 'PeakPatch (Good)'
 #run1_label = "z=11(?) 2048^3 cells 75 Mpc run (Rsmooth_max=1.577)"
@@ -114,8 +115,9 @@ axs[0,2].set_title(f"2D Histogram of halo positions for {run2_label}")
 field_file_run1 = sims_dir + "pp_runs/hpkvd-interface-run/fields/Fvec_640Mpc_Cambridge"
 field_file_run2 = sims_dir + "pp_runs/music-interface-run/fields/Fvec_640Mpc_MUSIC"
 
-run1.get_power_spectrum(field_file=field_file_run1, field_type='rhog')#, overwrite = True)
-run2.get_power_spectrum(field_file=field_file_run2, field_type='rhog')#, overwrite = True)
+# Overwrite MUSIC, don't overwrite HPKVD
+run1.get_power_spectrum(field_file=field_file_run1, field_type='rhog', overwrite = False)
+run2.get_power_spectrum(field_file=field_file_run2, field_type='rhog', overwrite = True)
 run1.plot_field_slice(fig, axs[1,1], field_type='rhog', intercept=0)
 run2.plot_field_slice(fig, axs[1,2], field_type='rhog', intercept=0)
 
