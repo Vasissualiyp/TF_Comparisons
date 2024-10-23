@@ -11,11 +11,11 @@ FIELDNAME="Fvec_640Mpc_MUSIC"
 
 # Run MUSIC
 cd $INTERFACE_DIR
-#./run_music.sh
+./run_music.sh
 
 # Move the fields file to the desired location
 cd ..
-#cp -f "fields/$FIELDNAME" "$RUN_DIR"fields/"$FIELDNAME"
+cp -f "fields/$FIELDNAME" "$RUN_DIR"fields/"$FIELDNAME"
 
 # Run HMF (and PS) comparisons
 cd $SCRIPT_DIR

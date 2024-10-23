@@ -19,6 +19,7 @@ elif machine == 'vas':
     total_usr_path = usr_path_vas
     sims_dir = usr_path2
     #out_dir = "/home/vasilii/research/notes/2024/10/03/figures"
+    out_dir = "."
 else:
     print(f"Unknown machine: {machine}. Allowed values: cita, vas")
 
@@ -44,12 +45,20 @@ run2_label = "music run"
 # ------------------ PARTS CHANGING END ------------------------
 
 
+if machine == 'cita':
+    field_file_run1 = run1_path + "/fields/Fvec_640Mpc_Cambridge"
+    field_file_run2 = run2_path + "/fields/Fvec_640Mpc_MUSIC"
+elif machine == 'vas':
+    field_file_run1 = sims_dir + "pp_runs/hpkvd-interface-run/fields/Fvec_640Mpc_Cambridge"
+    field_file_run2 = sims_dir + "pp_runs/music-interface-run2/fields/Fvec_640Mpc_MUSIC"
+else:
+    print(f"Unknown machine: {machine}. Allowed values: cita, vas")
 
 
 
 
 run1 = PeakPatch(run_dir=run1_path, params_file=run1_path+'param/parameters.ini')
-run2 =  PeakPatch(run_dir=run2_path, params_file=run2_path+'param/parameters.ini')
+run2 = PeakPatch(run_dir=run2_path, params_file=run2_path+'param/parameters.ini')
 # END IMPORT RUN
 
 # Adding halos for both runs
@@ -112,8 +121,6 @@ axs[0,2].set_title(f"2D Histogram of halo positions for {run2_label}")
 
 #field_file_run1="/home/vasilii/research/sims/PeakPatch/pp_runs/hpkvd-interface-run/fields/Fvec_640Mpc_Cambridge"
 #field_file_run2="/home/vasilii/research/sims/PeakPatch/pp_runs/music-interface-run/fields/Fvec_640Mpc_MUSIC"
-field_file_run1 = sims_dir + "pp_runs/hpkvd-interface-run/fields/Fvec_640Mpc_Cambridge"
-field_file_run2 = sims_dir + "pp_runs/music-interface-run/fields/Fvec_640Mpc_MUSIC"
 
 # Overwrite MUSIC, don't overwrite HPKVD
 run1.get_power_spectrum(field_file=field_file_run1, field_type='rhog', overwrite = False)
