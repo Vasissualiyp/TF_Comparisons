@@ -11,7 +11,7 @@ FIELDNAME="Fvec_640Mpc_MUSIC"
 
 # Run MUSIC
 cd $INTERFACE_DIR
-./run_music.sh
+#./run_music.sh
 
 # Move the fields file to the desired location
 cd ..
