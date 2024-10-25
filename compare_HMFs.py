@@ -92,6 +92,7 @@ half_boxsize2 = box_size2 // 2
 
 # Create a figure with subplots
 fig, axs = plt.subplots(2, 3, figsize=(20, 12))  # 3 plots in one column
+colorbar_max = 12 # sets the maximum value for the colorbar for halo plotting
 
 # Subplot 1: Halo Mass Function Comparison
 axs[0,0].plot(bin_edges_run1[1:], hist_run1, marker='.', linestyle='-', color='red', label=run1_label)
@@ -107,7 +108,7 @@ axs[0,0].legend()
 X, Y = np.meshgrid(xedges_run1, yedges_run1)
 hist2d_run1 = axs[0,1].pcolormesh(X, Y, halo_hist_run1.T, shading='auto', cmap='Reds')
 fig.colorbar(hist2d_run1, ax=axs[0,1], label='Count')
-fig.colorbar.set_ticks([0, 3, 6, 9, 12])
+hist2d_run1.set_clim(vmin=0, vmax=colorbar_max)
 axs[0,1].set_xlabel('X')
 axs[0,1].set_ylabel('Y')
 axs[0,1].set_title(f"2D Histogram of halo positions for {run1_label}")
@@ -116,7 +117,7 @@ axs[0,1].set_title(f"2D Histogram of halo positions for {run1_label}")
 X, Y = np.meshgrid(xedges_run2, yedges_run2)
 hist2d_run2 = axs[0,2].pcolormesh(X, Y, halo_hist_run2.T, shading='auto', cmap='Reds')
 fig.colorbar(hist2d_run2, ax=axs[0,2], label='Count')
-fig.colorbar.set_ticks([0, 3, 6, 9, 12])
+hist2d_run2.set_clim(vmin=0, vmax=colorbar_max)
 axs[0,2].set_xlabel('X')
 axs[0,2].set_ylabel('Y')
 axs[0,2].set_title(f"2D Histogram of halo positions for {run2_label}")
