@@ -11,15 +11,14 @@ output_file = 'output.dat'
 # Run parameters
 h        = 0.6735
 H0       = 100*h
-omch2    = 0.2607   # Omega_cdm * h^2
-ombh2    = 0.04897  # Omega_baryon * h^2
+omch2    = 0.2607  * h**2 # Omega_cdm * h^2
+ombh2    = 0.04897 * h**2 # Omega_baryon * h^2
 omk      = 0.0
-mnu      = 0.0
+mnu      = 0.06
 tau      = 0.0544
 ns       = 0.9649
 As       = 2.1e-9
 sigma8   = 0.8111
-m_nu     = 0.0
 
 redshift = 0
 
@@ -29,7 +28,7 @@ minkh    = 5e-6
 maxkh    = 5e3
 
 # Scaling factor for units
-camb_factor = (2 * np.pi * h)**3
+camb_factor = 1 #(2 * np.pi * h)**3
 
 # Set up the parameters
 pars = camb.CAMBparams()
@@ -49,7 +48,8 @@ s8 = np.array(results.get_sigma8())
 
 # Normalize matter power spectrum to match desired sigma_8
 print("sigma_8 pre normalization = ", s8)
-norm = (sigma8 / s8)**2  # Normalization constant
+norm = 1  # Normalization constant
+#norm = (sigma8 / s8)**2  # Normalization constant
 k = kh * h               # Wavenumber k in Mpc^-1
 pk = norm * pk[0, :] / camb_factor  # Normalized P_m(z=0,k)
 
