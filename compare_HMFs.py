@@ -107,14 +107,16 @@ axs[0,0].legend()
 X, Y = np.meshgrid(xedges_run1, yedges_run1)
 hist2d_run1 = axs[0,1].pcolormesh(X, Y, halo_hist_run1.T, shading='auto', cmap='Reds')
 fig.colorbar(hist2d_run1, ax=axs[0,1], label='Count')
+fig.colorbar.set_ticks([0, 3, 6, 9, 12])
 axs[0,1].set_xlabel('X')
 axs[0,1].set_ylabel('Y')
 axs[0,1].set_title(f"2D Histogram of halo positions for {run1_label}")
 
 # Subplot 3: 2D Histogram for PeakPatch
 X, Y = np.meshgrid(xedges_run2, yedges_run2)
-hist2d_run2 = axs[0,2].pcolormesh(X, Y, halo_hist_run2.T, shading='auto', cmap='Blues')
+hist2d_run2 = axs[0,2].pcolormesh(X, Y, halo_hist_run2.T, shading='auto', cmap='Reds')
 fig.colorbar(hist2d_run2, ax=axs[0,2], label='Count')
+fig.colorbar.set_ticks([0, 3, 6, 9, 12])
 axs[0,2].set_xlabel('X')
 axs[0,2].set_ylabel('Y')
 axs[0,2].set_title(f"2D Histogram of halo positions for {run2_label}")
@@ -124,7 +126,7 @@ axs[0,2].set_title(f"2D Histogram of halo positions for {run2_label}")
 
 # Overwrite MUSIC, don't overwrite HPKVD
 run1.get_power_spectrum(field_file=field_file_run1, field_type='rhog', overwrite = False)
-run2.get_power_spectrum(field_file=field_file_run2, field_type='rhog', overwrite = True)
+run2.get_power_spectrum(field_file=field_file_run2, field_type='rhog', overwrite = False)
 run1.plot_field_slice(fig, axs[1,1], field_type='rhog', intercept=0)
 run2.plot_field_slice(fig, axs[1,2], field_type='rhog', intercept=0)
 

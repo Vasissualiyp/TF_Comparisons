@@ -26,22 +26,24 @@ else:
 run_paths = [
     total_usr_path + 'pp_runs/hpkvd-interface-run2/',
     total_usr_path + 'pp_runs/music-interface-run2/',
-    total_usr_path + 'pp_runs/post_poisson_1/',
-    total_usr_path + 'pp_runs/post_poisson_2/',
-    total_usr_path + 'pp_runs/pre_poisson_1/',
-    total_usr_path + 'pp_runs/pre_poisson_2/',
-    total_usr_path + 'pp_runs/aperiodicTF/'
+    total_usr_path + 'pp_runs/z0/',
+    #total_usr_path + 'pp_runs/post_poisson_1/',
+    #total_usr_path + 'pp_runs/post_poisson_2/',
+    #total_usr_path + 'pp_runs/pre_poisson_1/',
+    #total_usr_path + 'pp_runs/pre_poisson_2/',
+    #total_usr_path + 'pp_runs/aperiodicTF/'
     #total_usr_path + 'pp_runs/TFmin_11/',
     #total_usr_path + 'pp_runs/TFmin_12/',
 ]
 run_labels = [
     "hpkvd run",
-    "music run",
-    "post_poisson_1",
-    "post_poisson_2",
-    "pre_poisson_1",
-    "pre_poisson_2",
-    "aperiodicTF"
+    "music run, $\\mathcal{P} \\times 2$",
+    "z=99, $\\mathcal{P} \\times (1+z)^2$ "
+    #"post_poisson_1",
+    #"post_poisson_2",
+    #"pre_poisson_1",
+    #"pre_poisson_2",
+    #"aperiodicTF"
     #"TFmin_11",
     #"TFmin_12",
 ]
@@ -52,10 +54,10 @@ if machine == 'cita':
         os.path.join(run_paths[0], "fields/Fvec_640Mpc_Cambridge"),
         os.path.join(run_paths[1], "fields/Fvec_640Mpc_MUSIC"),
         os.path.join(run_paths[2], "fields/Fvec_640Mpc_MUSIC"),
-        os.path.join(run_paths[3], "fields/Fvec_640Mpc_MUSIC"),
-        os.path.join(run_paths[4], "fields/Fvec_640Mpc_MUSIC"),
-        os.path.join(run_paths[5], "fields/Fvec_640Mpc_MUSIC"),
-        os.path.join(run_paths[6], "fields/Fvec_640Mpc_MUSIC")
+        #os.path.join(run_paths[3], "fields/Fvec_640Mpc_MUSIC"),
+        #os.path.join(run_paths[4], "fields/Fvec_640Mpc_MUSIC"),
+        #os.path.join(run_paths[5], "fields/Fvec_640Mpc_MUSIC"),
+        #os.path.join(run_paths[6], "fields/Fvec_640Mpc_MUSIC")
         #os.path.join(run_paths[7], "fields/Fvec_640Mpc_MUSIC"),
         #os.path.join(run_paths[8], "fields/Fvec_640Mpc_MUSIC")
     ]
@@ -66,6 +68,8 @@ elif machine == 'vas':
     ]
 else:
     print(f"Unknown machine: {machine}. Allowed values: cita, vas")
+
+adjustment_factors = [ 1, 2, 1e4 ]
 
 # ------------------ PARTS CHANGING END ------------------------
 
@@ -124,12 +128,14 @@ if plot_HMF:
 
 # Plot TF comparison
 if plot_TF:
-    for run in runs:
+    for i, run in enumerate(runs):
+        adj_fac = adjustment_factors[i]
         psx = run.k_from_rhog
         psy = run.k_from_rhog**3 / (2 * np.pi**2) * run.p_from_rhog
+        psy = psy * adj_fac
         axs[1].plot(psx, psy, marker='.', linestyle='-', label=run.label)
     axs[1].set_xlabel('k')
-    axs[1].set_ylabel('PS')
+    axs[1].set_ylabel('$\\mathcal{P}$')
     axs[1].set_xscale('log')
     axs[1].set_yscale('log')
     axs[1].set_title('Power Spectra comparison')

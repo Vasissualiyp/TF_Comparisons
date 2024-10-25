@@ -18,6 +18,7 @@ ombh2 = 0.04897 #* h**2 # Omega_baryon * h^2
 omk   = 0.0
 mnu   = 0.0
 tau   = 0.0544
+redshift = 0
 
 # A factor I played with for scaling
 camb_factor = 1 # (2 * np.pi * h)**3
@@ -26,7 +27,7 @@ camb_factor = 1 # (2 * np.pi * h)**3
 pars = camb.CAMBparams()
 pars.set_cosmology(H0=H0, omch2=omch2, ombh2=ombh2, omk=omk, mnu=mnu, tau=tau)
 pars.InitPower.set_params(As=2.1e-9, ns=0.9649)
-pars.set_matter_power(redshifts=[0], kmax=5000.0)
+pars.set_matter_power(redshifts=[redshift], kmax=5000.0)
 pars.NonLinear = model.NonLinear_both
 
 # Calculate the results
