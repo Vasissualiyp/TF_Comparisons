@@ -24,7 +24,7 @@ redshift = 0
 
 # Output powerspectrum parameters
 nkpoints = 1000
-minkh    = 5e-6
+minkh    = 1e-4
 maxkh    = 5e3
 
 # Scaling factor for units
@@ -36,10 +36,10 @@ pars = camb.CAMBparams()
 pars.set_cosmology(H0=H0, omch2=omch2, ombh2=ombh2, omk=omk, mnu=mnu, tau=tau)
 pars.InitPower.set_params(As=As, ns=ns)
 pars.set_matter_power(redshifts=[redshift], kmax=maxkh)
-pars.NonLinear = model.NonLinear_both
-pars.PK_WantTransfer = True  # Calculate the matter power transfer function
-pars.WantTransfer = True
-pars.Transfer.kmax = maxkh
+pars.NonLinear = model.NonLinear_none
+pars.PK_WantTransfer = 1  # Calculate the matter power transfer function
+pars.WantTransfer = 1
+pars.Transfer.kmax = maxkh * h
 
 # Calculate the results
 results = camb.get_results(pars)
@@ -48,8 +48,8 @@ s8 = np.array(results.get_sigma8())
 
 # Normalize matter power spectrum to match desired sigma_8
 print("sigma_8 pre normalization = ", s8)
-norm = 1  # Normalization constant
-#norm = (sigma8 / s8)**2  # Normalization constant
+#norm = 1 # Normalization constant if you don't want normalization
+norm = (sigma8 / s8)**2  # Normalization constant
 k = kh * h               # Wavenumber k in Mpc^-1
 pk = norm * pk[0, :] / camb_factor  # Normalized P_m(z=0,k)
 
