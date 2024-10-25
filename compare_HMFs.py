@@ -80,16 +80,6 @@ halo_hist_run1, xedges_run1, yedges_run1 = run1.halo_hist2d()
 halo_hist_run2, xedges_run2, yedges_run2 = run2.halo_hist2d()
 print('Halo histogram found for both runs')
 
-# Adjust bin edges by wrapping around the periodic boundary conditions
-box_size1 = run1.boxsize
-box_size2 = run2.boxsize
-half_boxsize1 = box_size1 // 2
-half_boxsize2 = box_size2 // 2
-#xedges_run1 = (xedges_run1 - half_boxsize1) % box_size1
-#yedges_run1 = (yedges_run1 - half_boxsize1) % box_size1
-#xedges_run2 = (xedges_run2 - half_boxsize2) % box_size2
-#yedges_run2 = (yedges_run2 - half_boxsize2) % box_size2
-
 # Create a figure with subplots
 fig, axs = plt.subplots(2, 3, figsize=(20, 12))  # 3 plots in one column
 colorbar_max = 12 # sets the maximum value for the colorbar for halo plotting
