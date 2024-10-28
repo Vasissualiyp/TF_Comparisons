@@ -7,12 +7,13 @@ from camb import model
 # 13 (new one, accepted by MUSIC)
 output_type = 13 
 output_file = 'output.dat'
+calc_nonG = True
 
 # Run parameters
 h        = 0.6735
 H0       = 100*h
-omch2    = 0.2607  * h**2 # Omega_cdm * h^2
-ombh2    = 0.04897 * h**2 # Omega_baryon * h^2
+omc      = 0.2607     # Omega_cdm
+omb      = 0.04897    # Omega_baryon
 omk      = 0.0
 mnu      = 0.06
 tau      = 0.0544
@@ -28,7 +29,9 @@ minkh    = 1e-4
 maxkh    = 5e3
 
 # Scaling factor for units
-camb_factor = 1 #(2 * np.pi * h)**3
+camb_factor = 1 #(2 * np.pi * h)**3 # KEEP AS 1!
+omch2       = omc * h**2 # Omega_cdm * h^2
+ombh2       = omb * h**2 # Omega_baryon * h^2
 
 # Set up the parameters
 pars = camb.CAMBparams()
@@ -36,9 +39,10 @@ pars = camb.CAMBparams()
 pars.set_cosmology(H0=H0, omch2=omch2, ombh2=ombh2, omk=omk, mnu=mnu, tau=tau)
 pars.InitPower.set_params(As=As, ns=ns)
 pars.set_matter_power(redshifts=[redshift], kmax=maxkh)
-pars.NonLinear = model.NonLinear_none
-pars.PK_WantTransfer = 1  # Calculate the matter power transfer function
-pars.WantTransfer = 1
+#pars.NonLinear = model.NonLinear_none # Used in PeakPatch
+pars.NonLinear = model.NonLinear_both # Used in my MUSIC-generated ICs
+pars.PK_WantTransfer = True  # Calculate the matter power transfer function
+pars.WantTransfer = True
 pars.Transfer.kmax = maxkh * h
 
 # Calculate the results
@@ -53,12 +57,13 @@ norm = (sigma8 / s8)**2  # Normalization constant
 k = kh * h               # Wavenumber k in Mpc^-1
 pk = norm * pk[0, :] / camb_factor  # Normalized P_m(z=0,k)
 
-# Primordial zeta power spectrum
-ko = 0.05
-pkzeta = 2 * np.pi**2 * As / k**3 * (k / ko)**(ns - 1)
-
-# Get transfer function
-Trans = np.sqrt(pk / pkzeta)
+if calc_nonG:
+    # Primordial zeta power spectrum
+    ko = 0.05
+    pkzeta = 2 * np.pi**2 * As / k**3 * (k / ko)**(ns - 1)
+    
+    # Get transfer function
+    Trans = np.sqrt(pk / pkzeta)
 
 # Extracting transfer functions
 transfer = results.get_matter_transfer_data()
@@ -68,7 +73,7 @@ delta_b = transfer.transfer_data[2,:,0]    # Baryon density contrast
 delta_g = transfer.transfer_data[3,:,0]    # Photon density contrast
 delta_nu = transfer.transfer_data[4,:,0]   # Massless neutrinos
 delta_num = transfer.transfer_data[5,:,0]  # Massive neutrinos
-delta_tot = transfer.transfer_data[5,:,0]  # Total matter density contrast (including massive neutrinos)
+delta_tot = transfer.transfer_data[6,:,0]  # Total matter density contrast (including massive neutrinos)
 delta_nonu = transfer.transfer_data[7,:,0] # Total matter excluding neutrinos
 delta_totde = transfer.transfer_data[8,:,0] # Total including DE perturbations
 phi = transfer.transfer_data[6,:,0]        # Weyl potential

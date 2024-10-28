@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 # Only options are 7 (old one, whose purpose is not clear to me), 
 # and 13 (new one, accepted by MUSIC)
 output_type = 13 
-output_file = 'output.dat'
+output_file = 'non_renorm_out.dat'
 
 # Run parameters
 h = 0.6735
