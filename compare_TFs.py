@@ -3,24 +3,35 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
+# File paths
 csv_file_path = 'non_renorm_out.dat'
-csv_file_path_2 = 'renorm_out.dat'
 csv_file_path_2 = 'output.dat'
 
-# Read only the first 13 columns to avoid extra unnamed columns
-df = pd.read_csv(csv_file_path, sep='\s+', usecols=range(13))
-df_2 = pd.read_csv(csv_file_path_2, sep='\s+', usecols=range(13))
+# Read the header separately, assuming the first line is the header
+with open(csv_file_path, 'r') as f:
+    header_line = f.readline().strip()
 
-var1 = 'k'
-type1 = float
-type2 = float
+# Process the header to remove the '#' and split by comma
+header_line = header_line.lstrip('#').replace(" ", "")  # Remove leading '#' and spaces
+header_columns = header_line.split(',')  # Split the header by comma
 
-# Get the list of column names
-column_names = df.columns.tolist()
-num_plots = len(column_names) - 1  # Exclude the first column (x-axis)
+# Read the data, skipping the header line, using spaces as delimiters
+df = pd.read_csv(csv_file_path, sep='\s+', skiprows=1, names=header_columns, usecols=range(13))
+df_2 = pd.read_csv(csv_file_path_2, sep='\s+', skiprows=1, names=header_columns, usecols=range(13))
+
+# Ensure the type of data is correct
+df = df.astype(float)
+df_2 = df_2.astype(float)
+
+# Get the list of column names, excluding the first one (x-axis)
+x_column_name = df.columns[0]  # This should now be 'k'
+y_column_names = df.columns[1:]  # All columns excluding 'k'
+
+num_plots = len(y_column_names)
 
 # Debugging: Check the columns and axes length
-print(f"Columns to plot (excluding x-axis): {column_names[1:]}")
+print(f"x-axis column: {x_column_name}")
+print(f"Columns to plot (excluding x-axis): {y_column_names}")
 print(f"Total number of plots: {num_plots}")
 
 # Calculate the number of rows and columns for subplots
@@ -31,17 +42,13 @@ nrows = math.ceil(num_plots / ncols)
 fig, axes = plt.subplots(nrows, ncols, figsize=(15, 10))
 axes = axes.flatten()
 
-# Loop over the column names, skipping the first one (assuming it's 'k')
-for idx, column_name in enumerate(column_names[1:]):
-    if idx >= len(axes):
-        print(f"Warning: More columns to plot ({num_plots}) than subplots available ({len(axes)}).")
-        break
+# Loop over the column names
+for idx, column_name in enumerate(y_column_names):
+    k1 = df[x_column_name]  # First column is always the x-axis (k)
+    p_cdm1 = df[column_name]  # Extract the current column for plotting
 
-    k1 = df.iloc[:, 0].astype(type1)
-    p_cdm1 = df[column_name].astype(type2)
-
-    k2 = df_2.iloc[:, 0].astype(type1)
-    p_cdm2 = df_2[column_name].astype(type2)
+    k2 = df_2[x_column_name]  # First column for the second dataset (k)
+    p_cdm2 = df_2[column_name]  # Extract the corresponding column from the second dataset
 
     # Interpolate p_cdm2 to match k1
     interp_p_cdm2 = np.interp(k1, k2, p_cdm2)
@@ -50,9 +57,10 @@ for idx, column_name in enumerate(column_names[1:]):
     # Select the current subplot
     ax = axes[idx]
 
+    # Plot the data
     ax.plot(k1, p_cdm1, label='Working PS')
     ax.plot(k2, p_cdm2, label='Broken PS')
-    # Uncomment to plot the ratio
+    # Uncomment to plot the ratio if needed
     # ax.plot(k1, ratio, label=f'Ratio, {column_name}')
 
     ax.set_xscale('log')
