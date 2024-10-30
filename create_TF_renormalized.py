@@ -39,10 +39,10 @@ pars = camb.CAMBparams()
 pars.set_cosmology(H0=H0, omch2=omch2, ombh2=ombh2, omk=omk, mnu=mnu, tau=tau)
 pars.InitPower.set_params(As=As, ns=ns)
 pars.set_matter_power(redshifts=[redshift], kmax=maxkh)
-#pars.NonLinear = model.NonLinear_none # Used in PeakPatch
-pars.NonLinear = model.NonLinear_both # Used in my MUSIC-generated ICs
-pars.PK_WantTransfer = True  # Calculate the matter power transfer function
-pars.WantTransfer = True
+pars.NonLinear = model.NonLinear_none # Used in PeakPatch
+#pars.NonLinear = model.NonLinear_both # Used in my MUSIC-generated ICs
+pars.PK_WantTransfer = 1  # Calculate the matter power transfer function
+pars.WantTransfer = 1
 pars.Transfer.kmax = maxkh * h
 
 # Calculate the results
@@ -74,6 +74,7 @@ delta_g = transfer.transfer_data[3,:,0]    # Photon density contrast
 delta_nu = transfer.transfer_data[4,:,0]   # Massless neutrinos
 delta_num = transfer.transfer_data[5,:,0]  # Massive neutrinos
 delta_tot = transfer.transfer_data[6,:,0]  # Total matter density contrast (including massive neutrinos)
+#delta_tot =   # Total matter density contrast (including massive neutrinos)
 delta_nonu = transfer.transfer_data[7,:,0] # Total matter excluding neutrinos
 delta_totde = transfer.transfer_data[8,:,0] # Total including DE perturbations
 phi = transfer.transfer_data[6,:,0]        # Weyl potential

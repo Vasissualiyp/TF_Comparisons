@@ -11,14 +11,23 @@ output_type = 13
 output_file = 'non_renorm_out.dat'
 
 # Run parameters
-h = 0.6735
+h     = 0.6735
 H0    = 100*h
-omch2 = 0.2607  #* h**2 # Omega_cdm * h^2
-ombh2 = 0.04897 #* h**2 # Omega_baryon * h^2
+omc   = 0.2607  # Omega_cdm
+omb   = 0.04897 # Omega_baryon
+omch2 = omc     # Omega_cdm * h^2
+ombh2 = omb     # Omega_baryon * h^2
 omk   = 0.0
 mnu   = 0.0
 tau   = 0.0544
 redshift = 0
+ns    = 0.9649
+As    = 2.1e-9
+
+# Parameters of the TF table
+kmax     = 5e3
+kmin     = 5e-6
+nkpoints = 1000
 
 # A factor I played with for scaling
 camb_factor = 1 # (2 * np.pi * h)**3
@@ -26,13 +35,13 @@ camb_factor = 1 # (2 * np.pi * h)**3
 # Set up the parameters
 pars = camb.CAMBparams()
 pars.set_cosmology(H0=H0, omch2=omch2, ombh2=ombh2, omk=omk, mnu=mnu, tau=tau)
-pars.InitPower.set_params(As=2.1e-9, ns=0.9649)
-pars.set_matter_power(redshifts=[redshift], kmax=5000.0)
+pars.InitPower.set_params(As=As, ns=ns)
+pars.set_matter_power(redshifts=[redshift], kmax=kmax)
 pars.NonLinear = model.NonLinear_both
 
 # Calculate the results
 results = camb.get_results(pars)
-kh, z, pk = results.get_matter_power_spectrum(minkh=1e-4, maxkh=5000, npoints=1000)
+kh, z, pk = results.get_matter_power_spectrum(minkh=kmin/h, maxkh=kmax/h, npoints=nkpoints)
 
 # Extracting velocity and potential data
 transfer = results.get_matter_transfer_data()

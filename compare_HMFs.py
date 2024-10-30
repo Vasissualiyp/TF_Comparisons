@@ -33,7 +33,7 @@ run1_path = total_usr_path + 'pp_runs/hpkvd-interface-run3/'
 #run2_path = usr_path + 'data/2024-09/cambridge_run_2048/'
 #run2_path = total_usr_path + 'pp_runs/music-interface-run-bbks/'
 #run2_path = total_usr_path + 'pp_runs/music-interface-run/'
-run2_path = total_usr_path + 'pp_runs/music-interface-run3/'
+run2_path = total_usr_path + 'pp_runs/music-interface-run4/'
 
 #run1_label = 'PeakPatch (Good)'
 #run1_label = "z=11(?) 2048^3 cells 75 Mpc run (Rsmooth_max=1.577)"
