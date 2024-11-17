@@ -1,5 +1,6 @@
 usr_path = '/home/vasilii/research/software_src/'
 import os, sys, numpy as np, matplotlib.pyplot as plt
+import argparse
 sys.path.insert(0, usr_path+'peakpatch/python')
 from peakpatchtools import PeakPatch
 from peakpatchtools import R_th_max
@@ -7,7 +8,7 @@ from peakpatchtools import HEC_Frho_of_z
 from peakpatchtools import r_comoving_of_z
 from peakpatchtools import z_of_r_comoving
 
-def calc_params_for_z(z):
+def calc_params_for_z(z, boxsize_original=1100,max_halosize_original=34):
     Omega_L=0.69033
     Omega_m=0.2607
     Omega_k=0.0
@@ -16,16 +17,19 @@ def calc_params_for_z(z):
     rmax = R_th_max(z)
     TabInterpX2 = HEC_Frho_of_z( z, Omega_m=Omega_m, Omega_k=Omega_k, Omega_Lambda=Omega_L )
     cenz = r_comoving_of_z(z, h=h, Omega_dm=Omega_m)
+    boxsize = boxsize_original * rmax / max_halosize_original 
     print(f"Rsmooth_max at z={z}: {rmax}")
     print(f"TabInterpX2 at z={z}: {TabInterpX2}")
     print(f"cenz at z={z}: {cenz}")
-    return rmax, TabInterpX2, cenz
+    print(f"boxsize at z={z}: {boxsize}")
+    return rmax, TabInterpX2, cenz, boxsize
 
-r_comov = r_comoving_of_z(z_of_r_comoving(1200))
-print(f"r_comov: {r_comov}")
-calc_params_for_z(0)
-calc_params_for_z(11)
-calc_params_for_z(20)
+parser = argparse.ArgumentParser(description="Calculate parameters for the new run")
+parser.add_argument('--z', type=int, help='Redshift of target simulation', required=True)
+parser.add_argument('--boxsize', type=float, help='Size of the original box', required=False, default=1100)
+args = parser.parse_args()
+print(f"New arguments at redshift={args.z}, at size of original box={args.boxsize} Mpc")
+calc_params_for_z(args.z, boxsize_original=args.boxsize)
 
 #run1 = PeakPatch(run_dir=run1_path, params_file=run1_path+'param/parameters.ini')
 #run2 =  PeakPatch(run_dir=run2_path, params_file=run2_path+'param/parameters.ini')
