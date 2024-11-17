@@ -17,14 +17,19 @@ if [ "$#" -lt 2 ]; then
 fi
 
 change_params_file() {
-  params="$1"
-  z="$2"
+  z="$1"
+  params="$2"
+echo "Successfully enter"
   boxsize_old=$(sed -n 's/^boxsize\s*=\s*\([0-9.eE+-]\+\).*/\1/p' "$params")
-  python "$calc_params_script" --z "$z" --boxsize "$boxsize_old" > "$py_out" || echo "Error running python code." && exit 1
+  nmesh=$(sed -n 's/^nmesh\s*=\s*\([0-9.eE+-]\+\).*/\1/p' "$params")
+  ntile=$(sed -n 's/^ntile\s*=\s*\([0-9.eE+-]\+\).*/\1/p' "$params")
+  nbuff=$(sed -n 's/^nbuff\s*=\s*\([0-9.eE+-]\+\).*/\1/p' "$params")
+  python "$calc_params_script" --z "$z" --boxsize "$boxsize_old" > "$py_out" 
   Rsmooth_max=$(grep z="$z" "$py_out" | grep Rsmooth_max | awk -F':' '{print $2}')
   cenz=$(grep z="$z" "$py_out"  | grep cenz | awk -F':' '{print $2}')
   TabInterpX2=$(grep z="$z" "$py_out"  | grep TabInterpX2 | awk -F':' '{print $2}')
   boxsize=$(grep z="$z" "$py_out"  | grep boxsize | awk -F':' '{print $2}')
+  run_name="n${nmesh}_nb${nbuff}_nt${ntile}_z${z}"
   #echo "$Rsmooth_max"
   #echo "$cenz"
   #echo "$TabInterpX2"
@@ -35,6 +40,8 @@ change_params_file() {
   sed -i "s/^\(cenz[[:space:]]*\)=.*/\1= ${cenz}/" "$new_params"
   sed -i "s/^\(TabInterpX2[[:space:]]*\)=.*/\1= ${TabInterpX2}/" "$new_params"
   sed -i "s/^\(Rsmooth_max[[:space:]]*\)=.*/\1= ${Rsmooth_max}/" "$new_params"
+  sed -i "s/^\(run_name[[:space:]]*\)=.*/\1= ${run_name}/" "$new_params"
 }
 
-change_params_file "$params" "$z"
+echo "Successfully before"
+change_params_file "$z" "$params" 
