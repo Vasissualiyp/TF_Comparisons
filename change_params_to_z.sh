@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 
-calc_params_script="./calculate_z11_run_params.py"
+calc_params_script="./calculate_different_z_params.py"
 py_out="./new_values.out"
 z="$1"
 params="$2"
 
 if [ "$#" -lt 2 ]; then
+    echo "This is a code to change the parameters of a parameters.ini file" >&1
+	echo "to run the same sim at different redshift." >&1
+	echo "New files will be created with filename parameters_z11.ini," >&1
+	echo "for z=11, for instance." >&1
+	echo "" >&1
     echo "Error: redshift and parameters file are required." >&2
     echo "Usage: $0 <z> <params> [additional params...]" >&2
     exit 1
@@ -15,7 +20,7 @@ change_params_file() {
   params="$1"
   z="$2"
   boxsize_old=$(sed -n 's/^boxsize\s*=\s*\([0-9.eE+-]\+\).*/\1/p' "$params")
-  python "$calc_params_script" --z "$z" --boxsize "$boxsize_old" > "$py_out"
+  python "$calc_params_script" --z "$z" --boxsize "$boxsize_old" > "$py_out" || echo "Error running python code." && exit 1
   Rsmooth_max=$(grep z="$z" "$py_out" | grep Rsmooth_max | awk -F':' '{print $2}')
   cenz=$(grep z="$z" "$py_out"  | grep cenz | awk -F':' '{print $2}')
   TabInterpX2=$(grep z="$z" "$py_out"  | grep TabInterpX2 | awk -F':' '{print $2}')
