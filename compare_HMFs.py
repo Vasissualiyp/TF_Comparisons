@@ -59,7 +59,7 @@ else:
 
 run_paths = [ run1_path, run2_path ]
 run_labels = [ run1_label, run2_label]
-def plot_runs(run_paths, run_labels):
+def plot_runs(run_paths, run_labels, out_dir):
     run1_path = run_paths[0]
     run2_path = run_paths[1]
     run1_label = run_labels[0]
@@ -69,40 +69,54 @@ def plot_runs(run_paths, run_labels):
         return 1
     runs_num=len(run_paths)
     runs = []
+    hist_runs = []
+    bin_edges_runs = []
+    halo_hist_runs = []
+    xedges_runs = []
+    yedges_runs = []
+    hist2d_runs = []
     for i in range(runs_num):
         runs.append( PeakPatch(run_dir=run_paths[0], params_file=run_paths[0]+'param/parameters.ini') )
-    #runs.append( PeakPatch(run_dir=run_paths[1], params_file=run_paths[1]+'param/parameters.ini') )
-    #run1 = PeakPatch(run_dir=run_paths[0], params_file=run_paths[0]+'param/parameters.ini')
-    #run2 = PeakPatch(run_dir=run_paths[1], params_file=run_paths[1]+'param/parameters.ini')
-    # END IMPORT RUN
     
-    # Adding halos for both runs
-    runs[0].add_halos()
-    runs[1].add_halos()
-    print('Halos added for both runs')
+        # Adding halos for run {i}
+        runs[i].add_halos()
+        print(f"Run {i}: Halos added")
     
-    # Calculating halo mass functions
-    hist_run1, bin_edges_run1 = runs[0].hmf(hmf_type='dn')
-    hist_run2, bin_edges_run2 = runs[1].hmf(hmf_type='dn')
-    print('Histogram parameters found for both runs')
+        # Calculating halo mass functions
+        hist_run, bin_edges_run = runs[i].hmf(hmf_type='dn')
+        hist_runs.append(hist_run)
+        bin_edges_runs.append(bin_edges_run)
+        #hist_run2, bin_edges_run2 = runs[1].hmf(hmf_type='dn')
+        print(f"Run {i}: Histogram parameters found")
     
-    runs[0].add_field(field_type='rhog')
-    runs[1].add_field(field_type='rhog')
-    print('Density fields added for both runs')
+        runs[i].add_field(field_type='rhog')
+        #runs[1].add_field(field_type='rhog')
+        print(f"Run {i}: Density fields added")
     
-    # Calculating 2D histograms for halo properties
-    halo_hist_run1, xedges_run1, yedges_run1 = runs[0].halo_hist2d()
-    halo_hist_run2, xedges_run2, yedges_run2 = runs[1].halo_hist2d()
-    print('Halo histogram found for both runs')
-    return 0
+        # Calculating 2D histograms for halo properties
+        halo_hist_run, xedges_run, yedges_run = runs[i].halo_hist2d()
+        halo_hist_runs.append(halo_hist_run)
+        xedges_runs.append(xedges_run)
+        yedges_runs.append(yedges_run)
+        #halo_hist_run2, xedges_run2, yedges_run2 = runs[1].halo_hist2d()
+        print(f"Run {i}: Halo histogram found")
     
     # Create a figure with subplots
-    fig, axs = plt.subplots(2, 3, figsize=(20, 12))  # 3 plots in one column
+    num_horizontal_plots = runs_num + 1
+    num_vertical_plots   = 2
+    horizontal_size = 4 * num_horizontal_plots
+    vertical_size   = 20
+
     colorbar_max = 12 # sets the maximum value for the colorbar for halo plotting
+
+    fig, axs = plt.subplots(num_vertical_plots, num_horizontal_plots, 
+                            figsize=(vertical_size, horizontal_size))  # 3 plots in one column
+
+    print("Starting plotting...")
     
     # Subplot 1: Halo Mass Function Comparison
-    axs[0,0].plot(bin_edges_run1[1:], hist_run1, marker='.', linestyle='-', color='red',  label=run-labels[1])
-    axs[0,0].plot(bin_edges_run2[1:], hist_run2, marker='.', linestyle='-', color='blue', label=run2_label)
+    for i in range(runs_num):
+        axs[0,0].plot(bin_edges_runs[i][1:], hist_runs[i], marker='.', linestyle='-', color='red',  label=run_labels[i])
     axs[0,0].set_xlabel('Mass Bin')
     axs[0,0].set_ylabel('Number of Halos')
     axs[0,0].set_xscale('log')
@@ -111,68 +125,70 @@ def plot_runs(run_paths, run_labels):
     axs[0,0].legend()
     
     # Subplot 2: 2D Histogram for MUSIC
-    X, Y = np.meshgrid(xedges_run1, yedges_run1)
-    hist2d_run1 = axs[0,1].pcolormesh(X, Y, halo_hist_run1.T, shading='auto', cmap='Reds')
-    fig.colorbar(hist2d_run1, ax=axs[0,1], label='Count')
-    hist2d_run1.set_clim(vmin=0, vmax=colorbar_max)
-    axs[0,1].set_xlabel('X')
-    axs[0,1].set_ylabel('Y')
-    axs[0,1].set_title(f"2D Histogram of halo positions for {run-labels[1]}")
+    for i in range(runs_num):
+        plotid = 1 + i
+        X, Y = np.meshgrid(xedges_runs[i], yedges_runs[i])
+        hist2d_runs.append(axs[0,plotid].pcolormesh(X, Y, halo_hist_runs[i].T, shading='auto', cmap='Reds'))
+        fig.colorbar(hist2d_runs[i], ax=axs[0,plotid], label='Count')
+        hist2d_runs[i].set_clim(vmin=0, vmax=colorbar_max)
+        axs[0,plotid].set_xlabel('X')
+        axs[0,plotid].set_ylabel('Y')
+        axs[0,plotid].set_title(f"2D Histogram of halo positions for {run_labels[i]}")
     
-    # Subplot 3: 2D Histogram for PeakPatch
-    X, Y = np.meshgrid(xedges_run2, yedges_run2)
-    hist2d_run2 = axs[0,2].pcolormesh(X, Y, halo_hist_run2.T, shading='auto', cmap='Reds')
-    fig.colorbar(hist2d_run2, ax=axs[0,2], label='Count')
-    hist2d_run2.set_clim(vmin=0, vmax=colorbar_max)
-    axs[0,2].set_xlabel('X')
-    axs[0,2].set_ylabel('Y')
-    axs[0,2].set_title(f"2D Histogram of halo positions for {run2_label}")
-    
-    #field_file_run1="/home/vasilii/research/sims/PeakPatch/pp_runs/hpkvd-interface-run/fields/Fvec_640Mpc_Cambridge"
-    #field_file_run2="/home/vasilii/research/sims/PeakPatch/pp_runs/music-interface-run/fields/Fvec_640Mpc_MUSIC"
-    
-    # Overwrite MUSIC, don't overwrite HPKVD
-    runs[0].get_power_spectrum(field_type='rhog', overwrite = True)
-    runs[1].get_power_spectrum(field_type='rhog', overwrite = True)
-    runs[0].plot_field_slice(fig, axs[1,1], field_type='rhog', intercept=0)
-    runs[1].plot_field_slice(fig, axs[1,2], field_type='rhog', intercept=0)
-    
-    run1_psx = runs[0].k_from_rhog
-    run1_psy = runs[0].k_from_rhog**3 / (2 * np.pi**2) * runs[0].p_from_rhog
-    run2_psx = runs[1].k_from_rhog
-    run2_psy = runs[1].k_from_rhog**3 / (2 * np.pi**2) * runs[1].p_from_rhog
-    
-    # Subplot 4: Halo Mass Function Comparison
-    axs[1,0].plot(run1_psx, run1_psy, marker='.', linestyle='-', color='red', label=run-labels[1])
-    axs[1,0].plot(run2_psx, run2_psy, marker='.', linestyle='-', color='blue', label=run2_label)
-    axs[1,0].set_xlabel('k')
-    axs[1,0].set_ylabel('PS')
-    axs[1,0].set_xscale('log')
-    axs[1,0].set_yscale('log')
-    axs[1,0].set_title('Power Spectra comparison')
-    axs[1,0].legend()
-    
-    axs[1,1].set_title(f"Density field, {run-labels[1]}")
-    axs[1,2].set_title(f"Density field, {run2_label}")
-    
-    ## Subplot 5: 2D Histogram for MUSIC
-    #X, Y = np.meshgrid(xedges_run1, yedges_run1)
-    #dhist2d_run1 = axs[0,1].pcolormesh(X, Y, del_lin_hist_run1.T, shading='auto', cmap='Reds')
-    #fig.colorbar(dhist2d_run1, ax=axs[0,1], label='Count')
-    #axs[1,1].set_xlabel('X')
-    #axs[1,1].set_ylabel('Y')
-    #axs[1,1].set_title(f"2D Histogram of Density for {run-labels[1]}")
+    ## Subplot 3: 2D Histogram for PeakPatch
+    ##X, Y = np.meshgrid(xedges_run2, yedges_run2)
+    ##hist2d_run2 = axs[0,2].pcolormesh(X, Y, halo_hist_run2.T, shading='auto', cmap='Reds')
+    ##fig.colorbar(hist2d_run2, ax=axs[0,2], label='Count')
+    ##hist2d_run2.set_clim(vmin=0, vmax=colorbar_max)
+    ##axs[0,2].set_xlabel('X')
+    ##axs[0,2].set_ylabel('Y')
+    ##axs[0,2].set_title(f"2D Histogram of halo positions for {run2_label}")
     #
-    ## Subplot 6: 2D Histogram for PeakPatch
-    #X, Y = np.meshgrid(xedges_run2, yedges_run2)
-    #dhist2d_run2 = axs[0,2].pcolormesh(X, Y, del_lin_hist_run2.T, shading='auto', cmap='Blues')
-    #fig.colorbar(dhist2d_run2, ax=axs[0,2], label='Count')
-    #axs[1,2].set_xlabel('X')
-    #axs[1,2].set_ylabel('Y')
-    #axs[1,2].set_title(f"2D Histogram of Density for {run2_label}")
+    ##field_file_run1="/home/vasilii/research/sims/PeakPatch/pp_runs/hpkvd-interface-run/fields/Fvec_640Mpc_Cambridge"
+    ##field_file_run2="/home/vasilii/research/sims/PeakPatch/pp_runs/music-interface-run/fields/Fvec_640Mpc_MUSIC"
+    #
+    ## Overwrite MUSIC, don't overwrite HPKVD
+    #runs[0].get_power_spectrum(field_type='rhog', overwrite = True)
+    #runs[1].get_power_spectrum(field_type='rhog', overwrite = True)
+    #runs[0].plot_field_slice(fig, axs[1,1], field_type='rhog', intercept=0)
+    #runs[1].plot_field_slice(fig, axs[1,2], field_type='rhog', intercept=0)
+    #
+    #run1_psx = runs[0].k_from_rhog
+    #run1_psy = runs[0].k_from_rhog**3 / (2 * np.pi**2) * runs[0].p_from_rhog
+    #run2_psx = runs[1].k_from_rhog
+    #run2_psy = runs[1].k_from_rhog**3 / (2 * np.pi**2) * runs[1].p_from_rhog
+    #
+    ## Subplot 4: Halo Mass Function Comparison
+    #axs[1,0].plot(run1_psx, run1_psy, marker='.', linestyle='-', color='red', label=run_labels[1])
+    #axs[1,0].plot(run2_psx, run2_psy, marker='.', linestyle='-', color='blue', label=run2_label)
+    #axs[1,0].set_xlabel('k')
+    #axs[1,0].set_ylabel('PS')
+    #axs[1,0].set_xscale('log')
+    #axs[1,0].set_yscale('log')
+    #axs[1,0].set_title('Power Spectra comparison')
+    #axs[1,0].legend()
+    #
+    #axs[1,1].set_title(f"Density field, {run_labels[1]}")
+    #axs[1,2].set_title(f"Density field, {run2_label}")
+    #
+    ### Subplot 5: 2D Histogram for MUSIC
+    ##X, Y = np.meshgrid(xedges_run1, yedges_run1)
+    ##dhist2d_run1 = axs[0,1].pcolormesh(X, Y, del_lin_hist_run1.T, shading='auto', cmap='Reds')
+    ##fig.colorbar(dhist2d_run1, ax=axs[0,1], label='Count')
+    ##axs[1,1].set_xlabel('X')
+    ##axs[1,1].set_ylabel('Y')
+    ##axs[1,1].set_title(f"2D Histogram of Density for {run_labels[1]}")
+    ##
+    ### Subplot 6: 2D Histogram for PeakPatch
+    ##X, Y = np.meshgrid(xedges_run2, yedges_run2)
+    ##dhist2d_run2 = axs[0,2].pcolormesh(X, Y, del_lin_hist_run2.T, shading='auto', cmap='Blues')
+    ##fig.colorbar(dhist2d_run2, ax=axs[0,2], label='Count')
+    ##axs[1,2].set_xlabel('X')
+    ##axs[1,2].set_ylabel('Y')
+    ##axs[1,2].set_title(f"2D Histogram of Density for {run2_label}")
     
     out_file = os.path.join(out_dir, 'Halo_Analysis_All_Plots.png')
     plt.show()
     plt.savefig(out_file)
 
-plot_runs(run_paths, run_labels)
+plot_runs(run_paths, run_labels, out_dir)
