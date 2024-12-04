@@ -1,7 +1,10 @@
 import numpy as np
 import camb
+import matplotlib
+import matplotlib.pyplot as plt
 from camb import model
 from classy import Class
+matplotlib.use('Agg') # Make plots interactive
 
 # Only options are:
 # 2 (Debug, TF_CDM vs k), 
@@ -9,6 +12,7 @@ from classy import Class
 # 13 (new one, accepted by MUSIC)
 output_type = 13 
 output_file = 'output.dat'
+figure_path = 'CLASS_vs_CAMB.png'
 calc_nonG = True # Whether to claculate nongaussianities with CAMB
 TF_src = 'CLASS' # Use CAMB or CLASS to generate transfer funtions
 
@@ -194,7 +198,7 @@ def get_formatted_data(td, params, output_type):
 
     Returns:
         header (str): header for output table
-        data (stack): a table with all the transfer functions in output format
+        data (np array): a table with all the transfer functions in output format
     """
     if output_type == 13: # MUSIC format
         header = 'k, delta_cdm, delta_b, delta_g, delta_nu, delta_num, delta_tot, delta_nonu, delta_totde, phi, v_cdm, v_b, v_b_cdm'
@@ -221,7 +225,7 @@ def get_formatted_data(td, params, output_type):
         return header, data
 
     print(f"Unsupported output type: {output_type}")
-    return '', 1
+    exit(1)
 
 def Save_output(header, data, output_file):
     """
@@ -229,19 +233,16 @@ def Save_output(header, data, output_file):
 
     Args:
         header (str): header for output table 
-        data (stack): a table with all the transfer functions in output format
+        data (np array): a table with all the transfer functions in output format
         output_file (str): name of the output table file
 
     Returns:
-        int: 0 on success, 1 on fail
+        int: 0 on success
     """
     # Avoid saving the output file if the output type is unsupported
-    if data.size == 1 and data[0] == 1:
-        return 1
-    else:
-        np.savetxt(output_file, data, header=header, fmt='%0.8e')
-        print(f"Data saved to {output_file}")
-        return 0
+    np.savetxt(output_file, data, header=header, fmt='%0.8e')
+    print(f"Data saved to {output_file}")
+    return 0
 
 def create_and_save_TF(output_file, TF_src, output_type, calc_nonG=False):
     """
@@ -254,7 +255,7 @@ def create_and_save_TF(output_file, TF_src, output_type, calc_nonG=False):
         output_type (int): a type of output requested. 13 for MUSIC, 2 for Debug
 
     Returns:
-        int: 0 on success, 1 on fail
+        data (np array): a table with all the transfer functions in output format
     """
     params = Run_params()
     if TF_src == 'CAMB':
@@ -266,12 +267,19 @@ def create_and_save_TF(output_file, TF_src, output_type, calc_nonG=False):
         print("Finished calculating CLASS TF")
     else:
         print(f"Wrong TF_src variable value: {TF_src}. Allowed values are: CAMB, CLASS")
-        return 1
+        exit(1)
     header, data = get_formatted_data(td, params, output_type)
-    if Save_output(header, data, output_file):
-        print("Error in saving output file")
-        return 1
-    return 0
+    Save_output(header, data, output_file)
+    return data
 
-#create_and_save_TF('CAMB.dat', 'CAMB', 2)
-create_and_save_TF('CLASS.dat', 'CLASS', 2)
+data_camb  = create_and_save_TF('CAMB.dat',  'CAMB',  2)
+data_class = create_and_save_TF('CLASS.dat', 'CLASS', 2)
+
+plt.plot(data_camb[:,0],  data_camb[:,1], label='CAMB, renormalized' )
+plt.plot(data_class[:,0], data_class[:,1], label='CLASS')
+plt.xlabel('k')
+plt.ylabel('P(k)')
+plt.legend()
+plt.xscale('log')
+plt.yscale('log')
+plt.savefig(figure_path)
