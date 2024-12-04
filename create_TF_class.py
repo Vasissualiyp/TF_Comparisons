@@ -138,14 +138,21 @@ def create_TF_CLASS(params):
     # Set up CLASS
     LambdaCDM = Class()
     # pass input parameters
-    LambdaCDM.set({'omega_b':params.omb,'omega_cdm':params.omc,'h':params.h,'A_s':params.As,'n_s':params.ns,'tau_reio':params.tau})
-    LambdaCDM.set({'output':'tCl,pCl,lCl,mPk','lensing':'yes','P_k_max_1/Mpc':3.0})
+    h = params.h
+    LambdaCDM.set({'omega_b':params.omb*h**2,
+                   'omega_cdm':params.omc*h**2,
+                   'h':h,
+                   'A_s':params.As,
+                   'n_s':params.ns,
+                   'tau_reio':params.tau})
+    LambdaCDM.set({'output':'tCl,pCl,lCl,mPk','lensing':'yes','P_k_max_1/Mpc':params.maxkh})
+    LambdaCDM.compute()
     kk = np.logspace(params.minkh,np.log10(params.maxkh),params.nkpoints) # k in h/Mpc
     Pk = [] # P(k) in (Mpc/h)**3
     h = LambdaCDM.h() # get reduced Hubble for conversions to 1/Mpc
     for k in kk:
         Pk.append(LambdaCDM.pk(k*h,0.)*h**3) # function .pk(k,z)
-    Tk = np.sqrt(Pk / k**params.ns)
+    Tk = np.sqrt(Pk / kk**params.ns)
     td.kh = kk
     td.delta_cdm = Tk
     return td
@@ -207,7 +214,7 @@ def get_formatted_data(td, params, output_type):
                         ]).T
         return header, data
     elif output_type == 2: # Debug format
-        header = 'k, delta_cdm, delta_b, delta_g, delta_nu, delta_num, delta_tot, delta_nonu, delta_totde, phi, v_cdm, v_b, v_b_cdm'
+        header = 'k, delta_cdm'
         data = np.vstack([td.kh * params.h,
                           td.delta_cdm,
                         ]).T
@@ -229,7 +236,7 @@ def Save_output(header, data, output_file):
         int: 0 on success, 1 on fail
     """
     # Avoid saving the output file if the output type is unsupported
-    if np.all(data) == 1:
+    if data.size == 1 and data[0] == 1:
         return 1
     else:
         np.savetxt(output_file, data, header=header, fmt='%0.8e')
@@ -261,8 +268,10 @@ def create_and_save_TF(output_file, TF_src, output_type, calc_nonG=False):
         print(f"Wrong TF_src variable value: {TF_src}. Allowed values are: CAMB, CLASS")
         return 1
     header, data = get_formatted_data(td, params, output_type)
-    Save_output(header, data, output_file)
+    if Save_output(header, data, output_file):
+        print("Error in saving output file")
+        return 1
     return 0
 
-create_and_save_TF('CAMB.dat', 'CAMB', 2)
+#create_and_save_TF('CAMB.dat', 'CAMB', 2)
 create_and_save_TF('CLASS.dat', 'CLASS', 2)
