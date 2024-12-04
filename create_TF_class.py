@@ -12,6 +12,8 @@ matplotlib.use('Agg') # Make plots interactive
 # 13 (new one, accepted by MUSIC)
 output_type = 13 
 output_file = 'output.dat'
+camb_file = 'CAMB.dat'
+class_file = 'CLASS.dat'
 figure_path = 'CLASS_vs_CAMB.png'
 calc_nonG = True # Whether to claculate nongaussianities with CAMB
 TF_src = 'CLASS' # Use CAMB or CLASS to generate transfer funtions
@@ -143,15 +145,19 @@ def create_TF_CLASS(params):
     LambdaCDM = Class()
     # pass input parameters
     h = params.h
-    LambdaCDM.set({'omega_b':params.omb*h**2,
-                   'omega_cdm':params.omc*h**2,
-                   'h':h,
-                   'A_s':params.As,
-                   'n_s':params.ns,
-                   'tau_reio':params.tau})
-    LambdaCDM.set({'output':'tCl,pCl,lCl,mPk','lensing':'yes','P_k_max_1/Mpc':params.maxkh})
+    LambdaCDM.set({'omega_b':  params.omb*h**2, # Little omega, so omega = Omega * h^2
+                   'omega_cdm':params.omc*h**2, # Little omega, so omega = Omega * h^2
+                   'h':        h,
+                   'A_s':      params.As,
+                   'n_s':      params.ns,
+                   'tau_reio': params.tau})
+    LambdaCDM.set({'output':'tCl,pCl,lCl,mPk',
+                   'lensing':'yes',
+                   'k_min_tau0':params.minkh,
+                   'P_k_max_h/Mpc':params.maxkh,
+                   })
     LambdaCDM.compute()
-    kk = np.logspace(params.minkh,np.log10(params.maxkh),params.nkpoints) # k in h/Mpc
+    kk = np.logspace(np.log10(params.minkh),np.log10(params.maxkh),params.nkpoints) # k in h/Mpc
     Pk = [] # P(k) in (Mpc/h)**3
     h = LambdaCDM.h() # get reduced Hubble for conversions to 1/Mpc
     for k in kk:
@@ -272,8 +278,9 @@ def create_and_save_TF(output_file, TF_src, output_type, calc_nonG=False):
     Save_output(header, data, output_file)
     return data
 
-data_camb  = create_and_save_TF('CAMB.dat',  'CAMB',  2)
-data_class = create_and_save_TF('CLASS.dat', 'CLASS', 2)
+#data_camb  = create_and_save_TF(camb_file,  'CAMB',  2)
+data_camb = np.loadtxt(camb_file, skiprows=1)
+data_class = create_and_save_TF(class_file, 'CLASS', 2)
 
 plt.plot(data_camb[:,0],  data_camb[:,1], label='CAMB, renormalized' )
 plt.plot(data_class[:,0], data_class[:,1], label='CLASS')
