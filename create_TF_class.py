@@ -154,9 +154,11 @@ def create_TF_CLASS(params):
     LambdaCDM.set({'output':'tCl,pCl,lCl,mPk',
                    'lensing':'yes',
                    'k_min_tau0':params.minkh,
+                   'z_pk': 0,
                    'P_k_max_h/Mpc':params.maxkh,
                    })
     LambdaCDM.compute()
+    td.norm = (params.sigma8 / LambdaCDM.sigma8())**2  # Normalization constant
     kk = np.logspace(np.log10(params.minkh),np.log10(params.maxkh),params.nkpoints) # k in h/Mpc
     Pk = [] # P(k) in (Mpc/h)**3
     h = LambdaCDM.h() # get reduced Hubble for conversions to 1/Mpc
@@ -270,6 +272,7 @@ def create_and_save_TF(output_file, TF_src, output_type, calc_nonG=False):
         print("Finished calculating CAMB TF")
     elif TF_src == 'CLASS':
         td = create_TF_CLASS(params)
+        td = Renormalize_transfer(td)
         print("Finished calculating CLASS TF")
     else:
         print(f"Wrong TF_src variable value: {TF_src}. Allowed values are: CAMB, CLASS")
