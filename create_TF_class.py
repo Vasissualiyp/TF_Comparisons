@@ -4,11 +4,13 @@ from camb import model
 from classy import Class
 
 # Only options are:
+# 2 (Debug, TF_CDM vs k), 
 # 7 (old one, whose purpose is not clear to me), 
 # 13 (new one, accepted by MUSIC)
 output_type = 13 
 output_file = 'output.dat'
-calc_nonG = True
+calc_nonG = True # Whether to claculate nongaussianities with CAMB
+TF_src = 'CLASS' # Use CAMB or CLASS to generate transfer funtions
 
 # Run parameters
 class Run_params():
@@ -55,8 +57,7 @@ class Transfer_data():
         self.v_b_cdm = np.array([])
         self.norm = 0.0
 
-
-def create_TF_CAMB(params):
+def create_TF_CAMB(params, calc_nonG):
     """
     Creates transfer functios using CAMB
 
@@ -90,10 +91,11 @@ def create_TF_CAMB(params):
     print("sigma_8 pre normalization = ", s8)
     #norm = 1 # Normalization constant if you don't want normalization
     td.norm = (params.sigma8 / s8)**2  # Normalization constant
-    k = kh * params.h               # Wavenumber k in Mpc^-1
-    pk = td.norm * pk[0, :]   # Normalized P_m(z=0,k)
     
     if calc_nonG:
+        k = kh * params.h               # Wavenumber k in Mpc^-1
+        pk = td.norm * pk[0, :]   # Normalized P_m(z=0,k)
+
         # Primordial zeta power spectrum
         ko = 0.05
         pkzeta = 2 * np.pi**2 * params.As / k**3 * (k / ko)**(params.ns - 1)
@@ -117,6 +119,35 @@ def create_TF_CAMB(params):
     td.v_b = transfer.transfer_data[11,:,0]       # Newtonian baryon velocity
     td.v_b_cdm = transfer.transfer_data[12,:,0]   # Relative baryon-CDM velocity
 
+    return td
+
+def create_TF_CLASS(params):
+    """
+    Creates transfer functios using CLASS
+
+    Args:
+        params (Run_params): cosmology and power spectrum parameters
+
+    Returns:
+        td (Transfer_data): TFs
+    """
+    
+    # Set up the transfer data class
+    td = Transfer_data()
+
+    # Set up CLASS
+    LambdaCDM = Class()
+    # pass input parameters
+    LambdaCDM.set({'omega_b':params.omb,'omega_cdm':params.omc,'h':params.h,'A_s':params.As,'n_s':params.ns,'tau_reio':params.tau})
+    LambdaCDM.set({'output':'tCl,pCl,lCl,mPk','lensing':'yes','P_k_max_1/Mpc':3.0})
+    kk = np.logspace(params.minkh,np.log10(params.maxkh),params.nkpoints) # k in h/Mpc
+    Pk = [] # P(k) in (Mpc/h)**3
+    h = LambdaCDM.h() # get reduced Hubble for conversions to 1/Mpc
+    for k in kk:
+        Pk.append(LambdaCDM.pk(k*h,0.)*h**3) # function .pk(k,z)
+    Tk = np.sqrt(Pk / k**params.ns)
+    td.kh = kk
+    td.delta_cdm = Tk
     return td
 
 def Renormalize_transfer(td):
@@ -147,11 +178,11 @@ def Renormalize_transfer(td):
 
 def get_formatted_data(td, output_type):
     """
-    formats the data in the format that is requestedz
+    formats the data in the format that is requested
 
     Args:
         td (Transfer_data): class that contains all the transfer functions
-        output_type (int): a type of output requested. 13 for MUSIC, 7 for legacy 
+        output_type (int): a type of output requested. 13 for MUSIC, 2 for Debug
 
     Returns:
         header (str): header for output table
@@ -174,9 +205,15 @@ def get_formatted_data(td, output_type):
                           td.v_b_cdm
                         ]).T
         return header, data
-    else:
-        print(f"Unsupported output type: {output_type}")
-        return '', 1
+    elif output_type == 2: # Debug format
+        header = 'k, delta_cdm, delta_b, delta_g, delta_nu, delta_num, delta_tot, delta_nonu, delta_totde, phi, v_cdm, v_b, v_b_cdm'
+        data = np.vstack([td.kh * params.h,
+                          td.delta_cdm,
+                        ]).T
+        return header, data
+
+    print(f"Unsupported output type: {output_type}")
+    return '', 1
 
 def Save_output(header, data, output_file):
     """
@@ -198,8 +235,31 @@ def Save_output(header, data, output_file):
         print(f"Data saved to {output_file}")
         return 0
 
-params = Run_params()
-td = create_TF_CAMB(params)
-td = Renormalize_transfer(td)
-header, data = get_formatted_data(td, output_type)
-Save_output(header, data, output_file)
+def create_and_save_TF(output_file, TF_src, output_type, calc_nonG=False):
+    """
+    This function is fully responsible for creating and saving transfer functions of a certain type, from start to finish
+
+    Args:
+        output_file (str): name of the output table file
+        TF_src (str): what code will create the transfer functions (CAMB or CLASS)
+        calc_nonG (bool): a flag whether to calculate nongaussianities
+        output_type (int): a type of output requested. 13 for MUSIC, 2 for Debug
+
+    Returns:
+        int: 0 on success, 1 on fail
+    """
+    params = Run_params()
+    if TF_src == 'CAMB':
+        td = create_TF_CAMB(params, calc_nonG)
+        td = Renormalize_transfer(td)
+    elif TF_src == 'CLASS':
+        td = create_TF_CLASS(params)
+    else:
+        print(f"Wrong TF_src variable value: {TF_src}. Allowed values are: CAMB, CLASS")
+        return 1
+    header, data = get_formatted_data(td, output_type)
+    Save_output(header, data, output_file)
+    return 0
+
+create_and_save_TF('CAMB.dat', 'CAMB', 2)
+create_and_save_TF('CLASS.dat', 'CLASS', 2)
