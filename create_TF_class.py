@@ -176,12 +176,13 @@ def Renormalize_transfer(td):
 
     return td
 
-def get_formatted_data(td, output_type):
+def get_formatted_data(td, params, output_type):
     """
     formats the data in the format that is requested
 
     Args:
         td (Transfer_data): class that contains all the transfer functions
+        params (Run_params): cosmology and power spectrum parameters
         output_type (int): a type of output requested. 13 for MUSIC, 2 for Debug
 
     Returns:
@@ -228,7 +229,7 @@ def Save_output(header, data, output_file):
         int: 0 on success, 1 on fail
     """
     # Avoid saving the output file if the output type is unsupported
-    if data == 1:
+    if np.all(data) == 1:
         return 1
     else:
         np.savetxt(output_file, data, header=header, fmt='%0.8e')
@@ -252,12 +253,14 @@ def create_and_save_TF(output_file, TF_src, output_type, calc_nonG=False):
     if TF_src == 'CAMB':
         td = create_TF_CAMB(params, calc_nonG)
         td = Renormalize_transfer(td)
+        print("Finished calculating CAMB TF")
     elif TF_src == 'CLASS':
         td = create_TF_CLASS(params)
+        print("Finished calculating CLASS TF")
     else:
         print(f"Wrong TF_src variable value: {TF_src}. Allowed values are: CAMB, CLASS")
         return 1
-    header, data = get_formatted_data(td, output_type)
+    header, data = get_formatted_data(td, params, output_type)
     Save_output(header, data, output_file)
     return 0
 
