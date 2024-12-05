@@ -8,6 +8,7 @@ matplotlib.use('Agg') # Make plots interactive
 
 # Only options are:
 # 2 (Debug, TF_CDM vs k), 
+# 4 (PeakPatch format), 
 # 7 (old one, whose purpose is not clear to me), 
 # 13 (new one, accepted by MUSIC)
 output_type = 13 
@@ -61,9 +62,11 @@ class Transfer_data():
         self.v_cdm = np.array([])
         self.v_b = np.array([])
         self.v_b_cdm = np.array([])
+        self.Trans = np.array([])
+        self.pkchi = np.array([])
         self.norm = 0.0
 
-def create_TF_CAMB(params, calc_nonG):
+def create_TF_CAMB(params):
     """
     Creates transfer functios using CAMB
 
@@ -98,17 +101,7 @@ def create_TF_CAMB(params, calc_nonG):
     #norm = 1 # Normalization constant if you don't want normalization
     td.norm = (params.sigma8 / s8)**2  # Normalization constant
     
-    if calc_nonG:
-        k = kh * params.h               # Wavenumber k in Mpc^-1
-        pk = td.norm * pk[0, :]   # Normalized P_m(z=0,k)
-
-        # Primordial zeta power spectrum
-        ko = 0.05
-        pkzeta = 2 * np.pi**2 * params.As / k**3 * (k / ko)**(params.ns - 1)
-        
-        # Get transfer function
-        Trans = np.sqrt(pk / pkzeta)
-    
+    td.Trans, td.pkchi = calc_pkp_ps_params(params, kh, pk[0,:], td.norm)
     # Extracting transfer functions
     transfer = results.get_matter_transfer_data()
     td.kh = transfer.transfer_data[0,:,0]  # Wavenumber k/h in Mpc^-1
@@ -127,6 +120,36 @@ def create_TF_CAMB(params, calc_nonG):
 
     return td
 
+def calc_pkp_ps_params(params, kh, pk, norm):
+    """
+    Calculates PeakPatch-related PS details
+
+    Args:
+        params (Run_params): cosmology and power spectrum parameters
+        kh (np array): Wavenumbers
+        pk (np array): Power spectrum
+        norm (float): Power spectrum normalization constant
+
+    Returns:
+        Trans (np array): PeakPatch Transfer function
+        pkchi (np array): PeakPatch chi power spectrum
+    """
+    k = kh * params.h               # Wavenumber k in Mpc^-1
+    pk = norm * pk[0, :] / (2. * np.pi * params.h)**3   # Normalized P_m(z=0,k)
+
+    # Primordial zeta power spectrum
+    ko = 0.05
+    pkzeta = 2 * np.pi**2 * params.As / k**3 * (k / ko)**(params.ns - 1)
+    
+    # Get transfer function
+    Trans = np.sqrt(pk / pkzeta)
+
+    # Light field power spectra
+    Achi = (5.e-7)**2
+    pkchi = 2 * np.pi**2 * Achi / k**3  # In units of sigmas
+    pkchi = pkchi / (2 * np.pi)**3  # For pp power spectra
+    return Trans, pkchi
+    
 def create_TF_CLASS(params):
     """
     Creates transfer functios using CLASS
@@ -145,8 +168,8 @@ def create_TF_CLASS(params):
     LambdaCDM = Class()
     # pass input parameters
     h = params.h
-    LambdaCDM.set({'omega_b':  params.omb*h**2, # Little omega, so omega = Omega * h^2
-                   'omega_cdm':params.omc*h**2, # Little omega, so omega = Omega * h^2
+    LambdaCDM.set({'omega_b':  params.omb*h**2, # Little omega, omega = Omega * h^2
+                   'omega_cdm':params.omc*h**2, # Little omega, omega = Omega * h^2
                    'h':        h,
                    'A_s':      params.As,
                    'n_s':      params.ns,
@@ -167,6 +190,7 @@ def create_TF_CLASS(params):
     Tk = np.sqrt(Pk / kk**params.ns)
     td.kh = kk
     td.delta_cdm = Tk
+    td.Trans, td.pkchi = calc_pkp_ps_params(params, kk, Pk, td.norm)
     return td
 
 def Renormalize_transfer(td):
@@ -228,7 +252,15 @@ def get_formatted_data(td, params, output_type):
     elif output_type == 2: # Debug format
         header = 'k, delta_cdm'
         data = np.vstack([td.kh * params.h,
-                          td.delta_cdm,
+                          td.delta_cdm
+                        ]).T
+        return header, data
+    elif output_type == 4: # PeakPatch format
+        header = 'k, delta_cdm'
+        data = np.vstack([td.kh * params.h,
+                          td.pk,
+                          td.Trans,
+                          td.pkchi
                         ]).T
         return header, data
 
@@ -247,12 +279,14 @@ def Save_output(header, data, output_file):
     Returns:
         int: 0 on success
     """
-    # Avoid saving the output file if the output type is unsupported
-    np.savetxt(output_file, data, header=header, fmt='%0.8e')
+    if header == '':
+        np.savetxt(output_file, data, fmt='%0.8e')
+    else:
+        np.savetxt(output_file, data, header=header, fmt='%0.8e')
     print(f"Data saved to {output_file}")
     return 0
 
-def create_and_save_TF(output_file, TF_src, output_type, calc_nonG=False):
+def create_and_save_TF(output_file, TF_src, output_type):
     """
     This function is fully responsible for creating and saving transfer functions of a certain type, from start to finish
 
@@ -267,7 +301,7 @@ def create_and_save_TF(output_file, TF_src, output_type, calc_nonG=False):
     """
     params = Run_params()
     if TF_src == 'CAMB':
-        td = create_TF_CAMB(params, calc_nonG)
+        td = create_TF_CAMB(params)
         td = Renormalize_transfer(td)
         print("Finished calculating CAMB TF")
     elif TF_src == 'CLASS':
