@@ -4,8 +4,13 @@ import numpy as np
 import math
 
 # File paths
-csv_file_path = 'non_renorm_out.dat'
-csv_file_path_2 = 'output.dat'
+#csv_file_path = 'non_renorm_out.dat'
+#csv_file_path_2 = 'output.dat'
+csv_file_path = 'CLASS.dat'
+label_1 = 'CLASS'
+csv_file_path_2 = 'CAMB.dat'
+label_2 = 'CAMB'
+figure_name = 'CLASS_vs_CAMB_full_comparison.png'
 
 # Read the header separately, assuming the first line is the header
 with open(csv_file_path, 'r') as f:
@@ -58,8 +63,8 @@ for idx, column_name in enumerate(y_column_names):
     ax = axes[idx]
 
     # Plot the data
-    ax.plot(k1, p_cdm1, label='Working PS')
-    ax.plot(k2, p_cdm2, label='Broken PS')
+    ax.plot(k1, p_cdm1, label=label_1)
+    ax.plot(k2, p_cdm2, label=label_2)
     # Uncomment to plot the ratio if needed
     # ax.plot(k1, ratio, label=f'Ratio, {column_name}')
 
@@ -77,3 +82,4 @@ plt.tight_layout()
 plt.suptitle('Comparison of working and broken CAMB power spectra', y=1.02)
 plt.subplots_adjust(top=0.9)  # Adjust space for the suptitle
 plt.show()
+plt.savefig(figure_name)

@@ -173,13 +173,14 @@ def create_TF_CLASS(params):
     td.delta_nonu = td.delta_tot - td.delta_nu - td.delta_num # Irrelevant for anything
     td.delta_totde = td.delta_tot # Irrelevant for anything
     td.phi = transfer_dict_v['phi']
-    td.v_b = transfer_dict_v['t_b']
+    #td.v_b = transfer_dict_v['t_b']
+    #td.v_cdm = transfer_dict_v['t_tot']
     # Alternative ways to calculate velocity TFs
-    #td.v_b = td.delta_b * td.kh
-    #td.v_cdm = td.delta_cdm * td.kh
+    td.v_b = td.delta_b * td.kh
+    td.v_cdm = td.delta_cdm * td.kh
     td.v_b_cdm = td.v_b - td.v_cdm
     td.Trans, td.pkchi = calc_pkp_ps_params(params, kk, Pk, td.norm)
-    #print(transfer_dict_v.keys())
+    print(transfer_dict_v.keys())
     return td
 
 def calc_pkp_ps_params(params, kh, pk, norm):
@@ -334,15 +335,15 @@ def create_and_save_TF(output_file, TF_src, output_type):
     Save_output(header, data, output_file)
     return data
 
-#data_camb  = create_and_save_TF(camb_file,  'CAMB',  2)
-data_camb = np.loadtxt(camb_file, skiprows=1)
-data_class = create_and_save_TF(class_file, 'CLASS', 2)
+#data_camb = np.loadtxt(camb_file, skiprows=1)
+data_class = create_and_save_TF(class_file, 'CLASS', output_type)
+#data_camb  = create_and_save_TF(camb_file,  'CAMB',  output_type)
 
-plt.plot(data_camb[:,0],  data_camb[:,1], label='CAMB, renormalized' )
-plt.plot(data_class[:,0], data_class[:,1], label='CLASS')
-plt.xlabel('k')
-plt.ylabel('P(k)')
-plt.legend()
-plt.xscale('log')
-plt.yscale('log')
-plt.savefig(figure_path)
+#plt.plot(data_camb[:,0],  data_camb[:,1], label='CAMB, renormalized' )
+#plt.plot(data_class[:,0], data_class[:,1], label='CLASS')
+#plt.xlabel('k')
+#plt.ylabel('P(k)')
+#plt.legend()
+#plt.xscale('log')
+#plt.yscale('log')
+#plt.savefig(figure_path)
