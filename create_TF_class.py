@@ -135,7 +135,7 @@ def calc_pkp_ps_params(params, kh, pk, norm):
         pkchi (np array): PeakPatch chi power spectrum
     """
     k = kh * params.h               # Wavenumber k in Mpc^-1
-    pk = norm * pk[0, :] / (2. * np.pi * params.h)**3   # Normalized P_m(z=0,k)
+    pk = norm * np.array(pk) / (2. * np.pi * params.h)**3   # Normalized P_m(z=0,k)
 
     # Primordial zeta power spectrum
     ko = 0.05
@@ -163,6 +163,7 @@ def create_TF_CLASS(params):
     
     # Set up the transfer data class
     td = Transfer_data()
+    Pk_renorm = (2 * np.pi / params.h)**3
 
     # Set up CLASS
     LambdaCDM = Class()
@@ -186,7 +187,7 @@ def create_TF_CLASS(params):
     Pk = [] # P(k) in (Mpc/h)**3
     h = LambdaCDM.h() # get reduced Hubble for conversions to 1/Mpc
     for k in kk:
-        Pk.append(LambdaCDM.pk(k*h,0.)*h**3) # function .pk(k,z)
+        Pk.append(LambdaCDM.pk(k*h,0.) * Pk_renorm ) # function .pk(k,z)
     Tk = np.sqrt(Pk / kk**params.ns)
     td.kh = kk
     td.delta_cdm = Tk
