@@ -120,6 +120,68 @@ def create_TF_CAMB(params):
 
     return td
 
+def create_TF_CLASS(params):
+    """
+    Creates transfer functios using CLASS
+
+    Args:
+        params (Run_params): cosmology and power spectrum parameters
+
+    Returns:
+        td (Transfer_data): TFs
+    """
+    
+    # Set up the transfer data class
+    td = Transfer_data()
+    Pk_renorm = (2 * np.pi )**3 # Renormalization constant to CAMB format
+
+    # Set up CLASS
+    LambdaCDM = Class()
+    # pass input parameters
+    h = params.h
+    LambdaCDM.set({'omega_b':  params.ombh2, # Little omega, omega = Omega * h^2
+                   'omega_cdm':params.omch2, # Little omega, omega = Omega * h^2
+                   'h':        h,
+                   'A_s':      params.As, #* 1e9, # Not clear to me why there's 1e9
+                   'n_s':      params.ns,
+                   'tau_reio': params.tau})
+    LambdaCDM.set({'output':'mTk,vTk,tCl,pCl,lCl,mPk',
+                   'lensing':'yes',
+                   'k_min_tau0':params.minkh,
+                   'z_pk': 0,
+                   'P_k_max_h/Mpc':params.maxkh,
+                   })
+    LambdaCDM.compute()
+    s8 = LambdaCDM.sigma8()
+    print("sigma_8 pre normalization = ", s8)
+    td.norm = (params.sigma8 / s8)**2  # Normalization constant
+    kk = np.logspace(np.log10(params.minkh),np.log10(params.maxkh),params.nkpoints) # k in h/Mpc
+    Pk = [] # P(k) in (Mpc/h)**3
+    h = LambdaCDM.h() # get reduced Hubble for conversions to 1/Mpc
+    for k in kk:
+        Pk.append(LambdaCDM.pk(k*h,0.) * Pk_renorm ) # function .pk(k,z)
+    #Tk = [ LambdaCDM.get_transfer(k*h,z=0, output_format='camb') for k in kk ]
+    transfer_dict = LambdaCDM.get_transfer(z=0, output_format='camb')
+    transfer_dict_v = LambdaCDM.get_transfer(z=0, output_format='class') # No velocity TFs in CAMB format
+    td.kh = transfer_dict['k (h/Mpc)']
+    td.delta_cdm = transfer_dict['-T_cdm/k2']
+    td.delta_b = transfer_dict['-T_b/k2']
+    td.delta_g = transfer_dict['-T_g/k2']
+    td.delta_nu = transfer_dict['-T_ur/k2']
+    td.delta_num = transfer_dict['-T_ncdm/k2']
+    td.delta_tot = transfer_dict['-T_tot/k2']
+    td.delta_nonu = td.delta_tot - td.delta_nu - td.delta_num # Irrelevant for anything
+    td.delta_totde = td.delta_tot # Irrelevant for anything
+    td.phi = transfer_dict_v['phi']
+    td.v_b = transfer_dict_v['t_b']
+    # Alternative ways to calculate velocity TFs
+    #td.v_b = td.delta_b * td.kh
+    #td.v_cdm = td.delta_cdm * td.kh
+    td.v_b_cdm = td.v_b - td.v_cdm
+    td.Trans, td.pkchi = calc_pkp_ps_params(params, kk, Pk, td.norm)
+    #print(transfer_dict_v.keys())
+    return td
+
 def calc_pkp_ps_params(params, kh, pk, norm):
     """
     Calculates PeakPatch-related PS details
@@ -150,50 +212,6 @@ def calc_pkp_ps_params(params, kh, pk, norm):
     pkchi = pkchi / (2 * np.pi)**3  # For pp power spectra
     return Trans, pkchi
     
-def create_TF_CLASS(params):
-    """
-    Creates transfer functios using CLASS
-
-    Args:
-        params (Run_params): cosmology and power spectrum parameters
-
-    Returns:
-        td (Transfer_data): TFs
-    """
-    
-    # Set up the transfer data class
-    td = Transfer_data()
-    Pk_renorm = (2 * np.pi / params.h)**3
-
-    # Set up CLASS
-    LambdaCDM = Class()
-    # pass input parameters
-    h = params.h
-    LambdaCDM.set({'omega_b':  params.omb*h**2, # Little omega, omega = Omega * h^2
-                   'omega_cdm':params.omc*h**2, # Little omega, omega = Omega * h^2
-                   'h':        h,
-                   'A_s':      params.As,
-                   'n_s':      params.ns,
-                   'tau_reio': params.tau})
-    LambdaCDM.set({'output':'tCl,pCl,lCl,mPk',
-                   'lensing':'yes',
-                   'k_min_tau0':params.minkh,
-                   'z_pk': 0,
-                   'P_k_max_h/Mpc':params.maxkh,
-                   })
-    LambdaCDM.compute()
-    td.norm = (params.sigma8 / LambdaCDM.sigma8())**2  # Normalization constant
-    kk = np.logspace(np.log10(params.minkh),np.log10(params.maxkh),params.nkpoints) # k in h/Mpc
-    Pk = [] # P(k) in (Mpc/h)**3
-    h = LambdaCDM.h() # get reduced Hubble for conversions to 1/Mpc
-    for k in kk:
-        Pk.append(LambdaCDM.pk(k*h,0.) * Pk_renorm ) # function .pk(k,z)
-    Tk = np.sqrt(Pk / kk**params.ns)
-    td.kh = kk
-    td.delta_cdm = Tk
-    td.Trans, td.pkchi = calc_pkp_ps_params(params, kk, Pk, td.norm)
-    return td
-
 def Renormalize_transfer(td):
     """
     Renormalizes transfer functions
