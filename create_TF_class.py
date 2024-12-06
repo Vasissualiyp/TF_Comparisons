@@ -11,7 +11,7 @@ matplotlib.use('Agg') # Make plots interactive
 # 4 (PeakPatch format), 
 # 7 (old one, whose purpose is not clear to me), 
 # 13 (new one, accepted by MUSIC)
-output_type = 13 
+output_type = 4 
 output_file = 'output.dat'
 camb_file = 'CAMB.dat'
 class_file = 'CLASS.dat'
@@ -62,9 +62,11 @@ class Transfer_data():
         self.v_cdm = np.array([])
         self.v_b = np.array([])
         self.v_b_cdm = np.array([])
+        self.norm = 0.0
+        self.kk = np.array([])
+        self.pk = np.array([])
         self.Trans = np.array([])
         self.pkchi = np.array([])
-        self.norm = 0.0
 
 def create_TF_CAMB(params):
     """
@@ -101,7 +103,7 @@ def create_TF_CAMB(params):
     #norm = 1 # Normalization constant if you don't want normalization
     td.norm = (params.sigma8 / s8)**2  # Normalization constant
     
-    td.Trans, td.pkchi = calc_pkp_ps_params(params, kh, pk[0,:], td.norm)
+    td = calc_pkp_ps_params(params, kh, pk[0,:], td)
     # Extracting transfer functions
     transfer = results.get_matter_transfer_data()
     td.kh          = transfer.transfer_data[0, :,0] # Wavenumber k/h in Mpc^-1
@@ -186,12 +188,12 @@ def create_TF_CLASS(params):
     td.delta_nonu  = td.delta_tot - td.delta_nu - td.delta_num # Irrelevant for anything
     td.delta_totde = td.delta_tot # Irrelevant for anything
 
-    td.Trans, td.pkchi = calc_pkp_ps_params(params, kk, Pk, td.norm)
+    td = calc_pkp_ps_params(params, kk, Pk, td)
     #print("Dict:")
     #print(transfer_dict_v.keys())
     return td
 
-def calc_pkp_ps_params(params, kh, pk, norm):
+def calc_pkp_ps_params(params, kh, pk, td):
     """
     Calculates PeakPatch-related PS details
 
@@ -206,7 +208,7 @@ def calc_pkp_ps_params(params, kh, pk, norm):
         pkchi (np array): PeakPatch chi power spectrum
     """
     k = kh * params.h               # Wavenumber k in Mpc^-1
-    pk = norm * np.array(pk) / (2. * np.pi * params.h)**3   # Normalized P_m(z=0,k)
+    pk = td.norm * np.array(pk) / (2. * np.pi * params.h)**3   # Normalized P_m(z=0,k)
 
     # Primordial zeta power spectrum
     ko = 0.05
@@ -219,7 +221,11 @@ def calc_pkp_ps_params(params, kh, pk, norm):
     Achi = (5.e-7)**2
     pkchi = 2 * np.pi**2 * Achi / k**3  # In units of sigmas
     pkchi = pkchi / (2 * np.pi)**3  # For pp power spectra
-    return Trans, pkchi
+    td.kk = kh
+    td.pk = pk
+    td.Trans = Trans
+    td.pkchi = pkchi
+    return td
     
 def Renormalize_transfer(td):
     """
@@ -254,13 +260,43 @@ def get_formatted_data(td, params, output_type):
     Args:
         td (Transfer_data): class that contains all the transfer functions
         params (Run_params): cosmology and power spectrum parameters
-        output_type (int): a type of output requested. 13 for MUSIC, 2 for Debug
+        output_type (int): a type of output requested: 
+            2 for Debug
+            4 for PeakPatch
+            7 for Legacy
+            13 for MUSIC
 
     Returns:
         header (str): header for output table
         data (np array): a table with all the transfer functions in output format
     """
-    if output_type == 13: # MUSIC format
+    if output_type == 2: # Debug format
+        header = 'k, delta_cdm'
+        data = np.vstack([td.kh * params.h,
+                          td.delta_cdm
+                        ]).T
+        return header, data
+    elif output_type == 4: # PeakPatch format
+        header = ''
+        data = np.vstack([td.kk * params.h,
+                          td.pk,
+                          td.Trans,
+                          td.pkchi
+                        ]).T
+        return header, data
+    elif output_type == 7: # Legacy format (usage unknown)
+        header = 'k/h Delta_CDM/k2 Delta_b/k2 Delta_g/k2 Delta_nu/k2 Delta_tot/k2 Phi'
+        k = td.kh
+        data = np.vstack([k,
+                          td.delta_cdm/k**2,
+                          td.delta_b/k**2,
+                          td.delta_g/k**2,
+                          td.delta_nu/k**2,
+                          td.delta_tot/k**2,
+                          td.phi
+                        ]).T
+        return header, data
+    elif output_type == 13: # MUSIC format
         header = 'k, delta_cdm, delta_b, delta_g, delta_nu, delta_num, delta_tot, delta_nonu, delta_totde, phi, v_cdm, v_b, v_b_cdm'
         data = np.vstack([td.kh * params.h,
                           td.delta_cdm,
@@ -277,21 +313,7 @@ def get_formatted_data(td, params, output_type):
                           td.v_b_cdm
                         ]).T
         return header, data
-    elif output_type == 2: # Debug format
-        header = 'k, delta_cdm'
-        data = np.vstack([td.kh * params.h,
-                          td.delta_cdm
-                        ]).T
-        return header, data
-    elif output_type == 4: # PeakPatch format
-        header = 'k, delta_cdm'
-        data = np.vstack([td.kh * params.h,
-                          td.pk,
-                          td.Trans,
-                          td.pkchi
-                        ]).T
-        return header, data
-
+    
     print(f"Unsupported output type: {output_type}")
     exit(1)
 
@@ -344,7 +366,7 @@ def create_and_save_TF(output_file, TF_src, output_type):
     return data
 
 #data_camb = np.loadtxt(camb_file, skiprows=1)
-data_class = create_and_save_TF(class_file, 'CLASS', output_type)
+#data_class = create_and_save_TF(class_file, 'CLASS', output_type)
 data_camb  = create_and_save_TF(camb_file,  'CAMB',  output_type)
 
 #plt.plot(data_camb[:,0],  data_camb[:,1], label='CAMB, renormalized' )
