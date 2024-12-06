@@ -134,6 +134,9 @@ def create_TF_CLASS(params):
     # Set up the transfer data class
     td = Transfer_data()
     Pk_renorm = (2 * np.pi )**3 # Renormalization constant to CAMB format
+    z = params.redshift
+    a = 1 / ( 1 + z )
+    camb_vel_factor = 1 / a / params.h / 100 
 
     # Set up CLASS
     LambdaCDM = Class()
@@ -144,11 +147,11 @@ def create_TF_CLASS(params):
                    'h':        h,
                    'A_s':      params.As, #* 1e9, # Not clear to me why there's 1e9
                    'n_s':      params.ns,
-                   'tau_reio': params.tau})
-    LambdaCDM.set({'output':'mTk,vTk,tCl,pCl,lCl,mPk',
+                   'tau_reio': params.tau,
+                   'output':'mTk,vTk,tCl,pCl,lCl,mPk',
                    'lensing':'yes',
                    'k_min_tau0':params.minkh,
-                   'z_pk': 0,
+                   'z_pk': z,
                    'P_k_max_h/Mpc':params.maxkh,
                    })
     LambdaCDM.compute()
@@ -161,8 +164,8 @@ def create_TF_CLASS(params):
     for k in kk:
         Pk.append(LambdaCDM.pk(k*h,0.) * Pk_renorm ) # function .pk(k,z)
     #Tk = [ LambdaCDM.get_transfer(k*h,z=0, output_format='camb') for k in kk ]
-    transfer_dict = LambdaCDM.get_transfer(z=0, output_format='camb')
-    transfer_dict_v = LambdaCDM.get_transfer(z=0, output_format='class') # No velocity TFs in CAMB format
+    transfer_dict = LambdaCDM.get_transfer(z=z, output_format='camb')
+    transfer_dict_v = LambdaCDM.get_transfer(z=z, output_format='class') # No velocity TFs in CAMB format
     td.kh = transfer_dict['k (h/Mpc)']
     td.delta_cdm = transfer_dict['-T_cdm/k2']
     td.delta_b = transfer_dict['-T_b/k2']
@@ -173,12 +176,12 @@ def create_TF_CLASS(params):
     td.delta_nonu = td.delta_tot - td.delta_nu - td.delta_num # Irrelevant for anything
     td.delta_totde = td.delta_tot # Irrelevant for anything
     td.phi = transfer_dict_v['phi']
-    #td.v_b = transfer_dict_v['t_b']
-    #td.v_cdm = transfer_dict_v['t_tot']
+    #td.v_b = transfer_dict_v['t_b'] * camb_vel_factor * td.kh
+    #td.v_cdm = transfer_dict_v['t_tot'] * camb_vel_factor * td.kh
     # Alternative ways to calculate velocity TFs
-    td.v_b = td.delta_b * td.kh
-    td.v_cdm = td.delta_cdm * td.kh
-    td.v_b_cdm = td.v_b - td.v_cdm
+    td.v_b = td.delta_b 
+    td.v_cdm = td.delta_cdm 
+    td.v_b_cdm = np.abs(td.v_b - td.v_cdm)
     td.Trans, td.pkchi = calc_pkp_ps_params(params, kk, Pk, td.norm)
     print(transfer_dict_v.keys())
     return td
