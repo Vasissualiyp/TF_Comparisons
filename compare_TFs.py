@@ -11,6 +11,7 @@ label_1 = 'CLASS'
 csv_file_path_2 = 'CAMB.dat'
 label_2 = 'CAMB'
 figure_name = 'CLASS_vs_CAMB_full_comparison.png'
+ratio_plot = False
 
 skiprows = 0 # 1 for data with the header (most), 0 for data w/o header (PeakPatch)
 
@@ -106,74 +107,73 @@ def plot_single_TF(ax, k, p_cdm, label):
     """
     ax.plot(k, p_cdm, label=label)
 
-def plot_TF_ratio(ax, k1, k2, p_cdm1, p_cdm2, column_name):
+def plot_TF_ratio(ax, dfs, x_column_name, column_name):
     """
     Plots a comparison plot of a single Transfer Function (TF) type.
 
     Args:
         ax (matplotlib.axes._subplots.AxesSubplot): The subplot axis to plot on.
-        k1 (pandas.Series or numpy.ndarray): List or array of k-values of the 1st dataset.
-        k2 (pandas.Series or numpy.ndarray): List or array of k-values of the 2nd dataset.
-        p_cdm1 (pandas.Series or numpy.ndarray): List or array of TF values of the 1st dataset
-        p_cdm2 (pandas.Series or numpy.ndarray): List or array of TF values of the 2nd dataset
+        dfs (list of pd dfs): list of datasets.
+        x_column_name (str): Name of the column with k's.
         column_name (str): Name of the TF type.
 
     Returns:
         None
     """
+    k1 = np.array(dfs[0][x_column_name]).flatten() 
+    k2 = np.array(dfs[1][x_column_name]).flatten() 
+    p_cdm1 = np.array(dfs[0][column_name]).flatten() 
+    p_cdm2 = np.array(dfs[1][column_name]).flatten() 
     # Interpolate p_cdm2 to match k1
     interp_p_cdm2 = np.interp(k1, k2, p_cdm2)
     ratio = p_cdm1 / interp_p_cdm2
     ax.plot(k1, ratio, label=f'Ratio, {column_name}')
 
-def plot_single_TF_comparison(df_1, df_2, ax, x_column_name, column_name, ratio_plot=False):
+def plot_single_TF_comparison(dfs, ax, x_column_name, column_name, labels, ratio_plot=False):
     """
     Plot comparison of single type of TFs
 
     Args:
-        df_1 (pd df): 1st dataset.
-        df_2 (pd df): 2nd dataset.
+        dfs (list of pd dfs): list of datasets.
         ax (matplotlib.axes._subplots.AxesSubplot): The subplot axis to plot on.
         idx (int): id of the TF
         x_column_name (str): Name of the column with k's.
         column_name (str): Name of the TF type.
+        labels (list of str): List of labels for each of the datasets.
         ratio_plot (bool): Whether to do a plot of ratios, or just TFs.
 
     Returns:
         None
     """
-    k1 = df_1[x_column_name]  # First column is always the x-axis (k)
-    p_cdm1 = df_1[column_name]  # Extract the current column for plotting
-
-    k2 = df_2[x_column_name]  # First column for the second dataset (k)
-    p_cdm2 = df_2[column_name]  # Extract the corresponding column from the second dataset
-
     # Plot the data
     if ratio_plot:
-        plot_TF_ratio(ax, k1, k2, p_cdm1, p_cdm2, column_name)
+        if len(dfs) == 2:
+            plot_TF_ratio(ax, dfs, x_column_name, column_name)
+        else:
+            print(f"Plotting ratio is only possible if you passed 2 datasets. You passed {len(dfs)}")
+            print("Please, pass less datasets or set ratio_plot to False")
+            exit(1)
     else:
-        plot_single_TF(ax, k1, p_cdm1, label_1)
-        plot_single_TF(ax, k2, p_cdm2, label_2)
+        print(len(dfs))
+        for df, label in zip(dfs, labels):
+            plot_single_TF(ax, df[x_column_name], df[column_name], label)
 
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.legend()
     ax.set_title(column_name)
 
-def main(skiprows, csv_file_paths, labels):
+def obtain_headers(csv_file_path, skiprows):
     """
-    Main loop for comparison of the plots
+    Get the header column names from the file or pre-defined for PeakPatch
 
     Args:
-        skiprows (int): How many rows to skip. Possible values: 0 for headless, 1 for dataset with the header
-        csv_file_paths (list of str): List of path to the file with the datasets
-        labels (list of str): List of labels for each of thedatasets
+        csv_file_path (str): path to the csv/dat table
+        skiprows (int): how many rows to skip (usually 1 for header or 0 for header-less)
 
     Returns:
-        return_type: description
+        header_columns (list): list of column names
     """
-    csv_file_path = csv_file_paths[0]
-    csv_file_path_2 = csv_file_paths[1]
     pp_header = 'k, Pk, Trans, pkchi'
     if skiprows == 0:
         header_line = set_header(csv_file_path, pp_header)
@@ -186,13 +186,32 @@ def main(skiprows, csv_file_paths, labels):
     # Process the header to remove the '#' and split by comma
     header_line = header_line.lstrip('#').replace(" ", "")  # Remove leading '#' and spaces
     header_columns = header_line.split(',')  # Split the header by comma
+    return header_columns
+
+def main(skiprows, csv_file_paths, labels, figure_name, ratio_plot=False):
+    """
+    Main loop for comparison of the plots
+
+    Args:
+        skiprows (int): How many rows to skip. Possible values: 0 for headless, 1 for dataset with the header.
+        csv_file_paths (list of str): List of path to the file with the datasets.
+        labels (list of str): List of labels for each of the datasets.
+        figure_name (str): the name of output plot.
+        ratio_plot (bool): Whether to do a plot of ratios, or just TFs.
+
+    Returns:
+        int: 0 if success
+    """
+
+    header_columns = obtain_headers(csv_file_paths[0], skiprows)
     
-    df_1 = read_data(csv_file_path, skiprows, header_columns)
-    df_2 = read_data(csv_file_path_2, skiprows, header_columns)
+    dfs = []
+    for csv_file_path in csv_file_paths:
+        dfs.append( read_data(csv_file_path, skiprows, header_columns) )
     
     # Get the list of column names, excluding the first one (x-axis)
-    x_column_name = df_1.columns[0]  # This should now be 'k'
-    y_column_names = df_1.columns[1:]  # All columns excluding 'k'
+    x_column_name  = dfs[0].columns[0]  # This should now be 'k'
+    y_column_names = dfs[0].columns[1:]  # All columns excluding 'k'
     
     num_plots = len(y_column_names)
     
@@ -212,7 +231,7 @@ def main(skiprows, csv_file_paths, labels):
     for idx, column_name in enumerate(y_column_names):
         # Select the current subplot
         ax = axes[idx]
-        plot_single_TF_comparison(df_1, df_2, ax, x_column_name, column_name)
+        plot_single_TF_comparison(dfs, ax, x_column_name, column_name, labels, ratio_plot)
     
     # Hide any unused subplots
     for ax in axes[num_plots:]:
@@ -225,4 +244,6 @@ def main(skiprows, csv_file_paths, labels):
     plt.savefig(figure_name)
     plt.show()
 
-main( skiprows, [ csv_file_path, csv_file_path_2 ], [label_1, label_2] ) 
+    return 0
+
+main( skiprows, [ csv_file_path, csv_file_path_2 ], [label_1, label_2], figure_name, ratio_plot ) 
