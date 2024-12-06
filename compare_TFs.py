@@ -12,25 +12,63 @@ csv_file_path_2 = 'CAMB.dat'
 label_2 = 'CAMB'
 figure_name = 'CLASS_vs_CAMB_full_comparison.png'
 
-# Read the header separately, assuming the first line is the header
-with open(csv_file_path, 'r') as f:
-    header_line = f.readline().strip()
+header = 'k, Pk, Trans, pkchi'
+skiprows = 0 # 1 for data with the header (most), 0 for data w/o header (PeakPatch)
 
+def set_header(csv_file_path, header=None):
+    """
+    This function returns header name if it is passed, or reads it from the file if it's not passed
+
+    Args:
+        csv_file_path (str): path to the csv/dat table
+        header (str): header, which is column names, separated by comma. 
+            Set to nothing to read it from the file.
+
+    Returns:
+        header (str): header
+    """
+    if header == None:
+        with open(csv_file_path, 'r') as f:
+            header_line = f.readline().strip()
+        return header_line
+    else:
+        return header
+
+
+if skiprows == 0:
+    header_line = set_header(csv_file_path, header)
+elif skiprows == 1:
+    header_line = set_header(csv_file_path)
 # Process the header to remove the '#' and split by comma
 header_line = header_line.lstrip('#').replace(" ", "")  # Remove leading '#' and spaces
 header_columns = header_line.split(',')  # Split the header by comma
 
 # Read the data, skipping the header line, using spaces as delimiters
-df = pd.read_csv(csv_file_path, sep='\s+', skiprows=1, names=header_columns, usecols=range(13))
-df_2 = pd.read_csv(csv_file_path_2, sep='\s+', skiprows=1, names=header_columns, usecols=range(13))
+def read_data(csv_file_path, skiprows, header_columns):
+    """
+    Reads the csv/dat file into dataframe
 
-# Ensure the type of data is correct
-df = df.astype(float)
-df_2 = df_2.astype(float)
+    Args:
+        csv_file_path (str): path to the csv/dat table
+        skiprows (int): how many rows to skip (usually 1 for header or 0 for header-less)
+        header_columns (list): list of column names
+
+    Returns:
+        df (pd dataframe): pandas dataframe, containing read data
+    """
+    column_no = len(header_columns)
+    delim = '\s+' # Spaces as delimiters
+    df = pd.read_csv(csv_file_path, sep=delim, skiprows=skiprows, names=header_columns, usecols=range(column_no))
+    # Ensure the type of data is correct
+    df = df.astype(float)
+    return df
+
+df_1 = read_data(csv_file_path, skiprows, header_columns)
+df_2 = read_data(csv_file_path_2, skiprows, header_columns)
 
 # Get the list of column names, excluding the first one (x-axis)
-x_column_name = df.columns[0]  # This should now be 'k'
-y_column_names = df.columns[1:]  # All columns excluding 'k'
+x_column_name = df_1.columns[0]  # This should now be 'k'
+y_column_names = df_1.columns[1:]  # All columns excluding 'k'
 
 num_plots = len(y_column_names)
 
@@ -47,10 +85,25 @@ nrows = math.ceil(num_plots / ncols)
 fig, axes = plt.subplots(nrows, ncols, figsize=(15, 10))
 axes = axes.flatten()
 
+def plot_single_TF_comparison(ax, k, p_cdm, label):
+    """
+    Plots a comparison plot of a single Transfer Function (TF) type.
+
+    Args:
+        ax (matplotlib.axes._subplots.AxesSubplot): The subplot axis to plot on.
+        k (pandas.Series or numpy.ndarray): List or array of k-values (x-axis data).
+        p_cdm (pandas.Series or numpy.ndarray): List or array of TF values (y-axis data).
+        label (str): Label for the plot legend.
+
+    Returns:
+        None
+    """
+    ax.plot(k, p_cdm, label=label)
+
 # Loop over the column names
 for idx, column_name in enumerate(y_column_names):
-    k1 = df[x_column_name]  # First column is always the x-axis (k)
-    p_cdm1 = df[column_name]  # Extract the current column for plotting
+    k1 = df_1[x_column_name]  # First column is always the x-axis (k)
+    p_cdm1 = df_1[column_name]  # Extract the current column for plotting
 
     k2 = df_2[x_column_name]  # First column for the second dataset (k)
     p_cdm2 = df_2[column_name]  # Extract the corresponding column from the second dataset
@@ -63,9 +116,8 @@ for idx, column_name in enumerate(y_column_names):
     ax = axes[idx]
 
     # Plot the data
-    ax.plot(k1, p_cdm1, label=label_1)
-    ax.plot(k2, p_cdm2, label=label_2)
-    # Uncomment to plot the ratio if needed
+    plot_single_TF_comparison(ax, k1, p_cdm1, label_1)
+    plot_single_TF_comparison(ax, k2, p_cdm2, label_2)
     # ax.plot(k1, ratio, label=f'Ratio, {column_name}')
 
     ax.set_xscale('log')
