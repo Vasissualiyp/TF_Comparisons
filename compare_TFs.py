@@ -159,7 +159,6 @@ def plot_single_TF_comparison(dfs, ax, x_column_name, column_name, labels, ratio
             print("Please, pass less datasets or set ratio_plot to False")
             exit(1)
     else:
-        print(len(dfs))
         for df, label in zip(dfs, labels):
             plot_single_TF(ax, df[x_column_name], df[column_name], label)
 

@@ -136,7 +136,8 @@ def create_TF_CLASS(params):
     
     # Set up the transfer data class
     td = Transfer_data()
-    Pk_renorm = (2 * np.pi )**3 # Renormalization constant to CAMB format
+    Pk_renorm = 1 #(2 * np.pi * params.h)**3 # Renormalization constant to CAMB format
+    Pk_renorm = params.h**(-2)
     z = params.redshift
 
     # Set up CLASS
@@ -144,7 +145,7 @@ def create_TF_CLASS(params):
     LambdaCDM.set({'omega_b':  params.ombh2, # Little omega, omega = Omega * h^2
                    'omega_cdm':params.omch2, # Little omega, omega = Omega * h^2
                    'h':        params.h,
-                   'A_s':      params.As, #* 1e9, # Not clear to me why there's 1e9
+                   'A_s':      params.As * 1e9, # Not clear to me why there's 1e9
                    'n_s':      params.ns,
                    'tau_reio': params.tau,
                    'output':'mTk,vTk,tCl,pCl,lCl,mPk,dTk',
@@ -163,10 +164,10 @@ def create_TF_CLASS(params):
 
     # Power spectrum calculation (for PeakPatch)
     kk = np.logspace(np.log10(params.minkh),np.log10(params.maxkh),params.nkpoints) # k in h/Mpc
-    Pk = [] # P(k) in (Mpc/h)**3
     h = LambdaCDM.h() # get reduced Hubble for conversions to 1/Mpc
+    Pk = [] # P(k) in (Mpc/h)**3
     for k in kk:
-        Pk.append(LambdaCDM.pk(k*h,0.) * Pk_renorm ) # function .pk(k,z)
+        Pk.append(LambdaCDM.pk(k*h,z) / Pk_renorm ) # function .pk(k,z)
 
     # Obtaining transfer functions
     transfer_dict = LambdaCDM.get_transfer(z=z, output_format='camb')
@@ -179,6 +180,8 @@ def create_TF_CLASS(params):
     td.delta_nu  = transfer_dict['-T_ur/k2']
     td.delta_num = transfer_dict['-T_ncdm/k2']
     td.delta_tot = transfer_dict['-T_tot/k2']
+
+    #Pk = td.delta_tot**2 * td.kh**params.ns
 
     td.v_b       = td.delta_b * h**2
     td.v_cdm     = td.delta_cdm * h**2
@@ -366,8 +369,8 @@ def create_and_save_TF(output_file, TF_src, output_type):
     return data
 
 #data_camb = np.loadtxt(camb_file, skiprows=1)
-#data_class = create_and_save_TF(class_file, 'CLASS', output_type)
-data_camb  = create_and_save_TF(camb_file,  'CAMB',  output_type)
+data_class = create_and_save_TF(class_file, 'CLASS', output_type)
+#data_camb  = create_and_save_TF(camb_file,  'CAMB',  output_type)
 
 #plt.plot(data_camb[:,0],  data_camb[:,1], label='CAMB, renormalized' )
 #plt.plot(data_class[:,0], data_class[:,1], label='CLASS')
