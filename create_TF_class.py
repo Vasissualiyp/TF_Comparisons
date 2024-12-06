@@ -104,20 +104,20 @@ def create_TF_CAMB(params):
     td.Trans, td.pkchi = calc_pkp_ps_params(params, kh, pk[0,:], td.norm)
     # Extracting transfer functions
     transfer = results.get_matter_transfer_data()
-    td.kh = transfer.transfer_data[0,:,0]  # Wavenumber k/h in Mpc^-1
-    td.delta_cdm = transfer.transfer_data[1,:,0]  # CDM density contrast
-    td.delta_b = transfer.transfer_data[2,:,0]    # Baryon density contrast
-    td.delta_g = transfer.transfer_data[3,:,0]    # Photon density contrast
-    td.delta_nu = transfer.transfer_data[4,:,0]   # Massless neutrinos
-    td.delta_num = transfer.transfer_data[5,:,0]  # Massive neutrinos
-    td.delta_tot = transfer.transfer_data[6,:,0]  # Total matter density contrast (including massive neutrinos)
-    td.delta_nonu = transfer.transfer_data[7,:,0] # Total matter excluding neutrinos
-    td.delta_totde = transfer.transfer_data[8,:,0] # Total including DE perturbations
-    td.v_cdm = transfer.transfer_data[10,:,0]     # Newtonian CDM velocity
-    td.v_b = transfer.transfer_data[11,:,0]       # Newtonian baryon velocity
-    td.v_b_cdm = transfer.transfer_data[12,:,0]   # Relative baryon-CDM velocity
+    td.kh          = transfer.transfer_data[0, :,0] # Wavenumber k/h in Mpc^-1
+    td.delta_cdm   = transfer.transfer_data[1, :,0] # CDM density contrast
+    td.delta_b     = transfer.transfer_data[2, :,0] # Baryon density contrast
+    td.delta_g     = transfer.transfer_data[3, :,0] # Photon density contrast
+    td.delta_nu    = transfer.transfer_data[4, :,0] # Massless neutrinos
+    td.delta_num   = transfer.transfer_data[5, :,0] # Massive neutrinos
+    td.delta_tot   = transfer.transfer_data[6, :,0] # Total matter density contrast (including massive neutrinos)
+    td.delta_nonu  = transfer.transfer_data[7, :,0] # Total matter excluding neutrinos
+    td.delta_totde = transfer.transfer_data[8, :,0] # Total including DE perturbations
+    td.v_cdm       = transfer.transfer_data[10,:,0] # Newtonian CDM velocity
+    td.v_b         = transfer.transfer_data[11,:,0] # Newtonian baryon velocity
+    td.v_b_cdm     = transfer.transfer_data[12,:,0] # Relative baryon-CDM velocity
     # Weyl potential - SHOULD BE 9, BUT BREAKS THE CODE! Not used anywhere anyways...
-    td.phi = transfer.transfer_data[6,:,0]        
+    td.phi         = transfer.transfer_data[6, :,0]        
 
     return td
 
@@ -170,22 +170,21 @@ def create_TF_CLASS(params):
     transfer_dict = LambdaCDM.get_transfer(z=z, output_format='camb')
     transfer_dict_v = LambdaCDM.get_transfer(z=z, output_format='class') # No velocity TFs in CAMB format
 
-    td.kh = transfer_dict['k (h/Mpc)']
-    k = td.kh * h
+    td.kh        = transfer_dict['k (h/Mpc)']
     td.delta_cdm = transfer_dict['-T_cdm/k2']
-    td.delta_b = transfer_dict['-T_b/k2']
-    td.delta_g = transfer_dict['-T_g/k2']
-    td.delta_nu = transfer_dict['-T_ur/k2']
+    td.delta_b   = transfer_dict['-T_b/k2']
+    td.delta_g   = transfer_dict['-T_g/k2']
+    td.delta_nu  = transfer_dict['-T_ur/k2']
     td.delta_num = transfer_dict['-T_ncdm/k2']
     td.delta_tot = transfer_dict['-T_tot/k2']
 
-    td.delta_nonu = td.delta_tot - td.delta_nu - td.delta_num # Irrelevant for anything
-    td.delta_totde = td.delta_tot # Irrelevant for anything
-    td.phi = transfer_dict_v['phi'] # Irrelevant for anything
+    td.v_b       = td.delta_b * h**2
+    td.v_cdm     = td.delta_cdm * h**2
+    td.v_b_cdm   = np.abs(td.v_b - td.v_cdm) # This one is not done correctly for some reason...
 
-    td.v_b = td.delta_b * h**2
-    td.v_cdm = td.delta_cdm * h**2
-    td.v_b_cdm = np.abs(td.v_b - td.v_cdm)
+    td.phi         = transfer_dict_v['phi'] # Irrelevant for anything
+    td.delta_nonu  = td.delta_tot - td.delta_nu - td.delta_num # Irrelevant for anything
+    td.delta_totde = td.delta_tot # Irrelevant for anything
 
     td.Trans, td.pkchi = calc_pkp_ps_params(params, kk, Pk, td.norm)
     #print("Dict:")
