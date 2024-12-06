@@ -81,5 +81,5 @@ for ax in axes[num_plots:]:
 plt.tight_layout()
 plt.suptitle('Comparison of working and broken CAMB power spectra', y=1.02)
 plt.subplots_adjust(top=0.9)  # Adjust space for the suptitle
-plt.show()
 plt.savefig(figure_name)
+plt.show()

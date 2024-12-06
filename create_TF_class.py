@@ -148,11 +148,12 @@ def create_TF_CLASS(params):
                    'A_s':      params.As, #* 1e9, # Not clear to me why there's 1e9
                    'n_s':      params.ns,
                    'tau_reio': params.tau,
-                   'output':'mTk,vTk,tCl,pCl,lCl,mPk',
+                   'output':'mTk,vTk,tCl,pCl,lCl,mPk,dTk',
                    'lensing':'yes',
                    'k_min_tau0':params.minkh,
                    'z_pk': z,
                    'P_k_max_h/Mpc':params.maxkh,
+                   #'gauge': 'newtonian',
                    })
     LambdaCDM.compute()
     s8 = LambdaCDM.sigma8()
@@ -167,22 +168,31 @@ def create_TF_CLASS(params):
     transfer_dict = LambdaCDM.get_transfer(z=z, output_format='camb')
     transfer_dict_v = LambdaCDM.get_transfer(z=z, output_format='class') # No velocity TFs in CAMB format
     td.kh = transfer_dict['k (h/Mpc)']
+    k = td.kh * h
     td.delta_cdm = transfer_dict['-T_cdm/k2']
     td.delta_b = transfer_dict['-T_b/k2']
     td.delta_g = transfer_dict['-T_g/k2']
     td.delta_nu = transfer_dict['-T_ur/k2']
     td.delta_num = transfer_dict['-T_ncdm/k2']
     td.delta_tot = transfer_dict['-T_tot/k2']
+
+    #td.delta_cdm = -transfer_dict_v['d_cdm'] / k**2
+    #td.delta_b = -transfer_dict_v['d_b'] / k**2
+    #td.delta_g = -transfer_dict_v['d_g'] / k**2
+    #td.delta_nu = -transfer_dict_v['d_ur'] / k**2
+    #td.delta_num = -transfer_dict_v['d_cdm'] / k**2
+    #td.delta_tot = -transfer_dict_v['d_tot'] / k**2
     td.delta_nonu = td.delta_tot - td.delta_nu - td.delta_num # Irrelevant for anything
     td.delta_totde = td.delta_tot # Irrelevant for anything
-    td.phi = transfer_dict_v['phi']
+    td.phi = transfer_dict_v['phi'] * 10**(7)
     #td.v_b = transfer_dict_v['t_b'] * camb_vel_factor * td.kh
     #td.v_cdm = transfer_dict_v['t_tot'] * camb_vel_factor * td.kh
     # Alternative ways to calculate velocity TFs
-    td.v_b = td.delta_b 
-    td.v_cdm = td.delta_cdm 
+    td.v_b = td.delta_b * h**2
+    td.v_cdm = td.delta_cdm * h**2
     td.v_b_cdm = np.abs(td.v_b - td.v_cdm)
     td.Trans, td.pkchi = calc_pkp_ps_params(params, kk, Pk, td.norm)
+    print("Dict:")
     print(transfer_dict_v.keys())
     return td
 
