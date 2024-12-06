@@ -4,16 +4,23 @@ import numpy as np
 import math
 
 # File paths
-#csv_file_path = 'non_renorm_out.dat'
-#csv_file_path_2 = 'output.dat'
-csv_file_path = 'CLASS.dat'
-label_1 = 'CLASS'
-csv_file_path_2 = 'CAMB.dat'
-label_2 = 'CAMB'
 figure_name = 'CLASS_vs_CAMB_full_comparison.png'
-ratio_plot = False
 
+csv_file_path_1 = 'CLASS.dat'
+csv_file_path_2 = 'CAMB.dat'
+label_1 = 'CLASS'
+label_2 = 'CAMB'
+
+csv_files = [ csv_file_path_1, csv_file_path_2 ]
+labels    = [ label_1,         label_2         ]
+
+ratio_plot = False
 skiprows = 0 # 1 for data with the header (most), 0 for data w/o header (PeakPatch)
+
+
+#----------------------------------------------------------------------------
+#-------------------------- END OF MODIFYABLE PART -------------------------- 
+#----------------------------------------------------------------------------
 
 def set_header(csv_file_path, header=None):
     """
@@ -34,7 +41,6 @@ def set_header(csv_file_path, header=None):
     else:
         return header
 
-# Read the data, skipping the header line, using spaces as delimiters
 def read_data(csv_file_path, skiprows, header_columns):
     """
     Reads the csv/dat file into dataframe
@@ -54,7 +60,6 @@ def read_data(csv_file_path, skiprows, header_columns):
     df = df.astype(float)
     return df
 
-# Calculate the number of rows and columns for subplots
 def get_rows_columns(num_plots):
     """
     Get a number of rows and columns for the subplots of the main plot, given the total
@@ -188,6 +193,48 @@ def obtain_headers(csv_file_path, skiprows):
     header_columns = header_line.split(',')  # Split the header by comma
     return header_columns
 
+def setup_plotting(num_plots):
+    """
+    Generate subplot grid from the number of plots
+
+    Args:
+        num_plots (int): number of subplots
+
+    Returns:
+        fig (matplotlib.figure.Figure): the master figure
+        axes (np array of matplotlib.axes._subplots.AxesSubplot): array of subplots
+    """
+    nrows, ncols = get_rows_columns(num_plots)
+    hsize, vsize = get_figsize(nrows, ncols, 4, 2)
+    
+    # Set up the grid of subplots
+    fig, axes = plt.subplots(nrows, ncols, figsize=(hsize, vsize))
+    axes = axes.flatten()
+    return fig, axes
+
+def finalize_plotting(axes, num_plots, figure_name):
+    """
+    Finalize plot and save it
+
+    Args:
+        axes (np array of matplotlib.axes._subplots.AxesSubplot): array of subplots
+        num_plots (int): number of subplots.
+        figure_name (str): the name of output plot.
+
+    Returns:
+        None
+    """
+    # Hide any unused subplots
+    for ax in axes[num_plots:]:
+        ax.axis('off')
+    
+    # Adjust layout
+    plt.tight_layout()
+    plt.suptitle('Comparison of working and broken CAMB power spectra', y=1.02)
+    plt.subplots_adjust(top=0.9)  # Adjust space for the suptitle
+    plt.savefig(figure_name)
+    plt.show()
+
 def main(skiprows, csv_file_paths, labels, figure_name, ratio_plot=False):
     """
     Main loop for comparison of the plots
@@ -215,17 +262,8 @@ def main(skiprows, csv_file_paths, labels, figure_name, ratio_plot=False):
     
     num_plots = len(y_column_names)
     
-    # Debugging: Check the columns and axes length
-    #print(f"x-axis column: {x_column_name}")
-    #print(f"Columns to plot (excluding x-axis): {y_column_names}")
-    #print(f"Total number of plots: {num_plots}")
-    
-    nrows, ncols = get_rows_columns(num_plots)
-    hsize, vsize = get_figsize(nrows, ncols, 4, 2)
-    
     # Set up the grid of subplots
-    fig, axes = plt.subplots(nrows, ncols, figsize=(hsize, vsize))
-    axes = axes.flatten()
+    fig, axes = setup_plotting(num_plots)
     
     # Loop over the column names
     for idx, column_name in enumerate(y_column_names):
@@ -233,17 +271,8 @@ def main(skiprows, csv_file_paths, labels, figure_name, ratio_plot=False):
         ax = axes[idx]
         plot_single_TF_comparison(dfs, ax, x_column_name, column_name, labels, ratio_plot)
     
-    # Hide any unused subplots
-    for ax in axes[num_plots:]:
-        ax.axis('off')
-    
-    # Adjust layout
-    plt.tight_layout()
-    plt.suptitle('Comparison of working and broken CAMB power spectra', y=1.02)
-    plt.subplots_adjust(top=0.9)  # Adjust space for the suptitle
-    plt.savefig(figure_name)
-    plt.show()
+    finalize_plotting(axes, num_plots, figure_name)
 
     return 0
 
-main( skiprows, [ csv_file_path, csv_file_path_2 ], [label_1, label_2], figure_name, ratio_plot ) 
+main( skiprows, csv_files, labels, figure_name, ratio_plot ) 
