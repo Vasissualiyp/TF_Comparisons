@@ -8,13 +8,17 @@ figure_name = 'CLASS_vs_CAMB_full_comparison.png'
 
 csv_file_path_1 = 'CLASS.dat'
 csv_file_path_2 = 'CAMB.dat'
+csv_file_path_3 = '/home/vasilii/research/software_src/peakpatch/tools/power.dat'
 label_1 = 'CLASS'
 label_2 = 'CAMB'
+label_3 = 'CAMB, original'
 
-csv_files = [ csv_file_path_1, csv_file_path_2 ]
-labels    = [ label_1,         label_2         ]
+#csv_files = [ csv_file_path_1, csv_file_path_2, csv_file_path_3]
+#labels    = [ label_1,         label_2,         label_3        ]
+csv_files = [ csv_file_path_2, csv_file_path_3]
+labels    = [ label_2,         label_3        ]
 
-ratio_plot = False
+ratio_plot = True
 skiprows = 0 # 1 for data with the header (most), 0 for data w/o header (PeakPatch)
 
 
@@ -112,13 +116,14 @@ def plot_single_TF(ax, k, p_cdm, label):
     """
     ax.plot(k, p_cdm, label=label)
 
-def plot_TF_ratio(ax, dfs, x_column_name, column_name):
+def plot_TF_ratio(ax, dfs, labels, x_column_name, column_name):
     """
     Plots a comparison plot of a single Transfer Function (TF) type.
 
     Args:
         ax (matplotlib.axes._subplots.AxesSubplot): The subplot axis to plot on.
         dfs (list of pd dfs): list of datasets.
+        labels (list of str): List of labels for each of the datasets.
         x_column_name (str): Name of the column with k's.
         column_name (str): Name of the TF type.
 
@@ -132,7 +137,11 @@ def plot_TF_ratio(ax, dfs, x_column_name, column_name):
     # Interpolate p_cdm2 to match k1
     interp_p_cdm2 = np.interp(k1, k2, p_cdm2)
     ratio = p_cdm1 / interp_p_cdm2
-    ax.plot(k1, ratio, label=f'Ratio, {column_name}')
+    ratio_name = 'Ratio, ' + column_name + ', (' + labels[0] + ')/(' + labels[1] + ')'
+    ax.plot(k1, ratio, label = 'claculated')
+    ax.plot(k1, np.ones(len(k1)), label = 'ideal')
+    ax.set_title(ratio_name)
+    ax.legend()
 
 def plot_single_TF_comparison(dfs, ax, x_column_name, column_name, labels, ratio_plot=False):
     """
@@ -153,19 +162,21 @@ def plot_single_TF_comparison(dfs, ax, x_column_name, column_name, labels, ratio
     # Plot the data
     if ratio_plot:
         if len(dfs) == 2:
-            plot_TF_ratio(ax, dfs, x_column_name, column_name)
+            print(f"Plotting {column_name} ratio: ({labels[0]})/({labels[1]})")
+            plot_TF_ratio(ax, dfs, labels, x_column_name, column_name)
         else:
             print(f"Plotting ratio is only possible if you passed 2 datasets. You passed {len(dfs)}")
             print("Please, pass less datasets or set ratio_plot to False")
             exit(1)
     else:
         for df, label in zip(dfs, labels):
+            print(f"Plotting {column_name} for {label}")
             plot_single_TF(ax, df[x_column_name], df[column_name], label)
+        ax.legend()
+        ax.set_title(column_name)
 
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.legend()
-    ax.set_title(column_name)
 
 def obtain_headers(csv_file_path, skiprows):
     """
