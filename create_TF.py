@@ -26,10 +26,10 @@ class Run_params():
         # Cosmology parameters
         self.h        = 0.6735
         self.H0       = 100*self.h
-        self.omc      = 0.2607     # Omega_cdm
-        self.omb      = 0.04897    # Omega_baryon
+        self.omc      = 0.2645     # Omega_cdm
+        self.omb      = 0.0493    # Omega_baryon
         self.omk      = 0.0
-        self.mnu      = 0.06
+        self.mnu      = 0.0
         self.tau      = 0.0544
         self.ns       = 0.9649
         self.As       = 2.1e-9
@@ -38,9 +38,31 @@ class Run_params():
         self.ombh2    = self.omb * self.h**2 # Omega_baryon * h^2
         # Output powerspectrum parameters
         self.nkpoints = 1000
-        self.minkh    = 1e-4
+        self.minkh    = 5e-6
         self.maxkh    = 5e3
         self.redshift = 0
+
+#class Run_params():
+#    """Class that contains its run parameters"""
+#    def __init__(self):
+#        # Cosmology parameters
+#        self.h        = 0.6735
+#        self.H0       = 100*self.h
+#        self.omc      = 0.2607     # Omega_cdm
+#        self.omb      = 0.04897    # Omega_baryon
+#        self.omk      = 0.0
+#        self.mnu      = 0.06
+#        self.tau      = 0.0544
+#        self.ns       = 0.9649
+#        self.As       = 2.1e-9
+#        self.sigma8   = 0.8111
+#        self.omch2    = self.omc * self.h**2 # Omega_cdm * h^2
+#        self.ombh2    = self.omb * self.h**2 # Omega_baryon * h^2
+#        # Output powerspectrum parameters
+#        self.nkpoints = 1000
+#        self.minkh    = 1e-4
+#        self.maxkh    = 5e3
+#        self.redshift = 0
 
 #----------------------------------------------------------------------------
 #-------------------------- END OF MODIFYABLE PART -------------------------- 
@@ -137,7 +159,7 @@ def create_TF_CLASS(params):
     # Set up the transfer data class
     td = Transfer_data()
     Pk_renorm = 1 #(2 * np.pi * params.h)**3 # Renormalization constant to CAMB format
-    Pk_renorm = params.h**(-2)
+    Pk_renorm = params.h**(-3)
     z = params.redshift
 
     # Set up CLASS

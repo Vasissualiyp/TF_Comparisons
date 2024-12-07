@@ -13,12 +13,14 @@ label_1 = 'CLASS'
 label_2 = 'CAMB'
 label_3 = 'CAMB, original'
 
-#csv_files = [ csv_file_path_1, csv_file_path_2, csv_file_path_3]
-#labels    = [ label_1,         label_2,         label_3        ]
-csv_files = [ csv_file_path_2, csv_file_path_3]
-labels    = [ label_2,         label_3        ]
+csv_files = [ csv_file_path_1, csv_file_path_2, csv_file_path_3]
+labels    = [ label_1,         label_2,         label_3        ]
+#csv_files = [ csv_file_path_1, csv_file_path_3]
+#labels    = [ label_1,         label_3        ]
+#lims = [[1e-4, 1e2], [0.5e0, 1.5e0]]
+lims = [[], []]
 
-ratio_plot = True
+ratio_plot = False
 skiprows = 0 # 1 for data with the header (most), 0 for data w/o header (PeakPatch)
 
 
@@ -143,7 +145,7 @@ def plot_TF_ratio(ax, dfs, labels, x_column_name, column_name):
     ax.set_title(ratio_name)
     ax.legend()
 
-def plot_single_TF_comparison(dfs, ax, x_column_name, column_name, labels, ratio_plot=False):
+def plot_single_TF_comparison(dfs, ax, x_column_name, column_name, labels, lims, ratio_plot=False):
     """
     Plot comparison of single type of TFs
 
@@ -177,6 +179,11 @@ def plot_single_TF_comparison(dfs, ax, x_column_name, column_name, labels, ratio
 
     ax.set_xscale('log')
     ax.set_yscale('log')
+    if lims != None:
+        if lims[0] != []:
+            ax.set_xlim(lims[0])
+        if lims[1] != []:
+            ax.set_ylim(lims[1])
 
 def obtain_headers(csv_file_path, skiprows):
     """
@@ -245,7 +252,7 @@ def finalize_plotting(axes, num_plots, figure_name):
     plt.savefig(figure_name)
     plt.show()
 
-def main(skiprows, csv_file_paths, labels, figure_name, ratio_plot=False):
+def main(skiprows, csv_file_paths, labels, figure_name, lims=[[],[]], ratio_plot=False):
     """
     Main loop for comparison of the plots
 
@@ -279,10 +286,10 @@ def main(skiprows, csv_file_paths, labels, figure_name, ratio_plot=False):
     for idx, column_name in enumerate(y_column_names):
         # Select the current subplot
         ax = axes[idx]
-        plot_single_TF_comparison(dfs, ax, x_column_name, column_name, labels, ratio_plot)
+        plot_single_TF_comparison(dfs, ax, x_column_name, column_name, labels, lims, ratio_plot)
     
     finalize_plotting(axes, num_plots, figure_name)
 
     return 0
 
-main( skiprows, csv_files, labels, figure_name, ratio_plot ) 
+main(skiprows, csv_files, labels, figure_name, lims, ratio_plot) 
