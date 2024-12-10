@@ -1,6 +1,7 @@
 usr_path = '/home/vasilii/research/software_src/'
 usr_path = '../../peakpatch/python/'
-import os, sys, numpy as np, matplotlib.pyplot as plt, matplotlib.gridspec as gridspec
+import os, sys, math, numpy as np, 
+import matplotlib.pyplot as plt
 sys.path.insert(0, usr_path+'peakpatch/python')
 from peakpatchtools import PeakPatch
 
@@ -22,6 +23,7 @@ elif machine == 'vas':
     out_dir = "."
 else:
     print(f"Unknown machine: {machine}. Allowed values: cita, vas")
+    exit(1)
 
 
 #run2_label = 'PeakPatch (IPR)'
@@ -35,23 +37,59 @@ run1_path = total_usr_path + 'pp_runs/hpkvd-interface-run3/'
 #run2_path = total_usr_path + 'pp_runs/music-interface-run/'
 #run2_path = total_usr_path + 'pp_runs/music-interface-run6/'
 run2_path = total_usr_path + 'pp_runs/nong_test_z5/'
+run3_path = total_usr_path + 'pp_runs/nong_test_z11/'
 
 #run1_label = 'PeakPatch (Good)'
 #run1_label = "z=11(?) 2048^3 cells 75 Mpc run (Rsmooth_max=1.577)"
-run1_label = "hpkvd run"
+run1_label = "hpkvd run z=0"
 #run2_label = 'PeakPatch (IPR)'
 #run2_label = 'z=11(?) 4096^3 cells 6.4 Mpc run (Rsmooth_max=0.0668)'
 #run2_label = "music run (BBKS)"
 run2_label = "hkvd run z=5"
+run3_label = "hkvd run z=11"
 # ------------------ PARTS CHANGING END ------------------------
 
-run_paths = [ run1_path, run2_path ]
-run_labels = [ run1_label, run2_label]
+run_paths =  [ run1_path,  run2_path,  run3_path  ]
+run_labels = [ run1_label, run2_label, run3_label ]
+
+def get_rows_columns(num_plots):
+    """
+    Get a number of rows and columns for the subplots of the main plot, given the total
+    number of subplots
+
+    Args:
+        num_plots (int): number of subplots
+
+    Returns:
+        nrows (int): number of rows 
+        ncols (int): number of columns 
+    """
+    if num_plots < 5:
+        ncols = num_plots
+    else:
+        ncols = math.ceil(np.sqrt(num_plots))
+    nrows = math.ceil(num_plots / ncols)
+    return nrows, ncols
+
+def get_figsize(nrows, ncols, plot_size, bnd_size):
+    """
+    Gets the geometric size of the figure based on subfigure structure
+
+    Args:
+        nrows (int): number of rows of subfigures
+        ncols (int): number of columns of subfigures
+        plot_size (float): size of the figure
+        bnd_size (float): size of the  boundary
+
+    Returns:
+        hsize (float): horizontal size of master plot
+        vsize (float): vertical size of master plot
+    """
+    hsize = ncols * plot_size + 2 * bnd_size
+    vsize = nrows * plot_size + 2 * bnd_size
+    return hsize, vsize
+
 def plot_runs(run_paths, run_labels, out_dir):
-    run1_path = run_paths[0]
-    run2_path = run_paths[1]
-    run1_label = run_labels[0]
-    run2_label = run_labels[1]
     if len(run_paths) != len(run_labels):
         print("ERROR: Different lengths of run_paths and run_labels lists!")
         return 1
@@ -93,15 +131,13 @@ def plot_runs(run_paths, run_labels, out_dir):
         print(f"Run {i}: Halo histogram found")
     
     # Create a figure with subplots
-    num_horizontal_plots = runs_num + 1
-    num_vertical_plots   = 2
-    horizontal_size = 4 * num_horizontal_plots
-    vertical_size   = 20
+    nrows, ncols = get_rows_columns(runs_num)
+    hsize, vsize = get_figsize(nrows, ncols, 4, 2)
 
     colorbar_max = 12 # sets the maximum value for the colorbar for halo plotting
 
-    fig, axs = plt.subplots(num_vertical_plots, num_horizontal_plots, 
-                            figsize=(vertical_size, horizontal_size))  # 3 plots in one column
+    fig, axs = plt.subplots(ncols, nrows, 
+                            figsize=(vsize, hsize))
 
     print("Starting plotting...")
     
