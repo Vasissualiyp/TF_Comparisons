@@ -1,6 +1,6 @@
 usr_path = '/home/vasilii/research/software_src/'
 usr_path = '../../peakpatch/python/'
-import os, sys, math, numpy as np, 
+import os, sys, math, numpy as np
 import matplotlib.pyplot as plt
 sys.path.insert(0, usr_path+'peakpatch/python')
 from peakpatchtools import PeakPatch
@@ -45,8 +45,8 @@ run1_label = "hpkvd run z=0"
 #run2_label = 'PeakPatch (IPR)'
 #run2_label = 'z=11(?) 4096^3 cells 6.4 Mpc run (Rsmooth_max=0.0668)'
 #run2_label = "music run (BBKS)"
-run2_label = "hkvd run z=5"
-run3_label = "hkvd run z=11"
+run2_label = "hpkvd run z=5"
+run3_label = "hpkvd run z=11"
 # ------------------ PARTS CHANGING END ------------------------
 
 run_paths =  [ run1_path,  run2_path,  run3_path  ]
@@ -131,13 +131,13 @@ def plot_runs(run_paths, run_labels, out_dir):
         print(f"Run {i}: Halo histogram found")
     
     # Create a figure with subplots
-    nrows, ncols = get_rows_columns(runs_num)
+    nrows = 2
+    ncols = runs_num + 1
     hsize, vsize = get_figsize(nrows, ncols, 4, 2)
 
     colorbar_max = 12 # sets the maximum value for the colorbar for halo plotting
 
-    fig, axs = plt.subplots(ncols, nrows, 
-                            figsize=(vsize, hsize))
+    fig, axs = plt.subplots(nrows, ncols, figsize=(hsize, vsize))
 
     print("Starting plotting...")
     
@@ -159,13 +159,21 @@ def plot_runs(run_paths, run_labels, out_dir):
 
         # Subplots (N+3)-(2N): Overdensity fields
         axs[1,plotid].set_title(f"Density field, {run_labels[i]}")
-        runs[i].get_power_spectrum(field_type='rhog', overwrite = False)
+
+        # Set which label to overwrite
+        overwrite = False
+        if run_labels[i] == "hpkvd run z=11":
+            overwrite = True
+
+        runs[i].get_power_spectrum(field_type='rhog', overwrite = overwrite)
         runs[i].plot_field_slice(fig, axs[1,plotid], field_type='rhog', intercept=0)
 
         # Subplot (N+2): Halo Mass Function Comparison
         runs_psx.append( runs[i].k_from_rhog )
         runs_psy.append( runs[i].k_from_rhog**3 / (2 * np.pi**2) * runs[i].p_from_rhog )
-        axs[1,0].plot(runs_psx[i], runs_psy[i], marker='.', linestyle='-', color=plots_colors[i], label=run_labels[i])
+        axs[1,0].plot(runs_psx[i], runs_psy[i], marker='.', 
+                      linestyle='-', color=plots_colors[i], 
+                      label=run_labels[i])
         print(f"Run {i}: Plotted Overdensity")
 
     # Format Subplot 1 (HMFs)
