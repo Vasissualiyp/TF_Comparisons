@@ -97,7 +97,7 @@ class compare_HMFs():
         self.out_dir = out_dir
         self.run_labels = run_labels
 
-    def plot_runs(self):
+    def plot_runs(self, hmf_colspan=2):
         # Initialize lists to store run data
         self.hist_runs = []
         self.bin_edges_runs = []
@@ -106,6 +106,8 @@ class compare_HMFs():
         self.yedges_runs = []
         self.runs_psx = []
         self.runs_psy = []
+
+        ps_colspan = hmf_colspan
 
         # Process each run first (compute HMFs, fields, etc.)
         for i in range(self.runs_num):
@@ -136,19 +138,18 @@ class compare_HMFs():
             self.runs.append(run)
 
         # Create figure with adjusted layout
-        runs_num = self.runs_num
         nrows = 2
-        ncols = 2 + runs_num  # 2 columns for HMF/PS, rest for individual runs
+        ncols = max(hmf_colspan, ps_colspan) + self.runs_num  # Total columns in the grid
 
         fig = plt.figure(figsize=(4 * ncols, 3 * nrows))  # Adjust size as needed
 
         # Create merged axes for HMF and PS spanning two columns each
-        ax_hmf = plt.subplot2grid((nrows, ncols), (0, 0), colspan=2)
-        ax_ps = plt.subplot2grid((nrows, ncols), (1, 0), colspan=2)
+        ax_hmf = plt.subplot2grid((nrows, ncols), (0, 0), colspan=hmf_colspan)
+        ax_ps = plt.subplot2grid((nrows, ncols), (1, 0), colspan=ps_colspan)
 
         # Prepare axes for histograms and density fields
-        axs_hist = [plt.subplot2grid((nrows, ncols), (0, 2 + i)) for i in range(runs_num)]
-        axs_dens = [plt.subplot2grid((nrows, ncols), (1, 2 + i)) for i in range(runs_num)]
+        axs_hist = [plt.subplot2grid((nrows, ncols), (0, hmf_colspan + i)) for i in range(self.runs_num)]
+        axs_dens = [plt.subplot2grid((nrows, ncols), (1, ps_colspan + i)) for i in range(self.runs_num)]
 
         colorbar_max = 12
 
