@@ -37,7 +37,9 @@ run1_path = total_usr_path + 'pp_runs/hpkvd-interface-run3/'
 #run2_path = total_usr_path + 'pp_runs/music-interface-run/'
 #run2_path = total_usr_path + 'pp_runs/music-interface-run6/'
 run2_path = total_usr_path + 'pp_runs/nong_test_z5/'
-run3_path = total_usr_path + 'pp_runs/nong_test_z11/'
+run3_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z8/'
+run4_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z11/'
+run5_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z13/'
 
 #run1_label = 'PeakPatch (Good)'
 #run1_label = "z=11(?) 2048^3 cells 75 Mpc run (Rsmooth_max=1.577)"
@@ -46,11 +48,13 @@ run1_label = "hpkvd run z=0"
 #run2_label = 'z=11(?) 4096^3 cells 6.4 Mpc run (Rsmooth_max=0.0668)'
 #run2_label = "music run (BBKS)"
 run2_label = "hpkvd run z=5"
-run3_label = "hpkvd run z=11"
+run3_label = "hpkvd run z=8"
+run4_label = "hpkvd run z=11"
+run5_label = "hpkvd run z=13"
 # ------------------ PARTS CHANGING END ------------------------
 
-run_paths =  [ run1_path,  run2_path,  run3_path  ]
-run_labels = [ run1_label, run2_label, run3_label ]
+run_paths =  [ run1_path,  run2_path,  run3_path,  run4_path,  run5_path  ]
+run_labels = [ run1_label, run2_label, run3_label, run4_label, run5_label ]
 
 def get_figsize(nrows, ncols, plot_size, bnd_size):
     """
@@ -93,100 +97,100 @@ class compare_HMFs():
         self.out_dir = out_dir
         self.run_labels = run_labels
 
-    def plot_runs():
-        for i in range(runs_num):
-            self.runs.append( PeakPatch(run_dir=run_paths[i], params_file=run_paths[i]+'param/parameters.ini') )
-        
-            # Adding halos for run {i}
-            self.runs[i].add_halos()
+    def plot_runs(self):
+        # Initialize lists to store run data
+        self.hist_runs = []
+        self.bin_edges_runs = []
+        self.halo_hist_runs = []
+        self.xedges_runs = []
+        self.yedges_runs = []
+        self.runs_psx = []
+        self.runs_psy = []
+
+        # Process each run first (compute HMFs, fields, etc.)
+        for i in range(self.runs_num):
+            # Load run data
+            run = PeakPatch(run_dir=self.run_paths[i], params_file=self.run_paths[i] + 'param/parameters.ini')
+            run.add_halos()
             print(f"Run {i}: Halos added")
-        
-            # Calculating halo mass functions
-            hist_run, bin_edges_run = self.runs[i].hmf(hmf_type='dn')
+
+            # Compute Halo Mass Function
+            hist_run, bin_edges_run = run.hmf(hmf_type='dn')
             self.hist_runs.append(hist_run)
             self.bin_edges_runs.append(bin_edges_run)
-            #hist_run2, bin_edges_run2 = self.runs[1].hmf(hmf_type='dn')
-            print(f"Run {i}: Histogram parameters found")
-        
-            self.runs[i].add_field(field_type='rhog')
-            #self.runs[1].add_field(field_type='rhog')
-            print(f"Run {i}: Density fields added")
-        
-            # Calculating 2D histograms for halo properties
-            halo_hist_run, xedges_run, yedges_run = self.runs[i].halo_hist2d()
+            print(f"Run {i}: HMF computed")
+
+            # Compute density field and power spectrum
+            run.add_field(field_type='rhog')
+            run.get_power_spectrum(field_type='rhog', overwrite=(self.run_labels[i] == "hpkvd run z=11"))
+            self.runs_psx.append(run.k_from_rhog)
+            self.runs_psy.append(run.k_from_rhog**3 / (2 * np.pi**2) * run.p_from_rhog)
+
+            # Compute 2D halo histogram
+            halo_hist_run, xedges_run, yedges_run = run.halo_hist2d()
             self.halo_hist_runs.append(halo_hist_run)
             self.xedges_runs.append(xedges_run)
             self.yedges_runs.append(yedges_run)
-            #halo_hist_run2, xedges_run2, yedges_run2 = self.runs[1].halo_hist2d()
-            print(f"Run {i}: Halo histogram found")
-        
-        # Create a figure with subplots
+            print(f"Run {i}: 2D halo histogram computed")
+
+            self.runs.append(run)
+
+        # Create figure with adjusted layout
+        runs_num = self.runs_num
         nrows = 2
-        ncols = runs_num + 1
-        hsize, vsize = get_figsize(nrows, ncols, 4, 2)
-    
-        colorbar_max = 12 # sets the maximum value for the colorbar for halo plotting
-    
-        fig, axs = plt.subplots(nrows, ncols, figsize=(hsize, vsize))
-    
-        print("Starting plotting...")
-        
-        # Subplot 1: Halo Mass Function Comparison
-        for i in range(runs_num):
-            plotid = 1 + i
-            axs[0,0].plot(self.bin_edges_runs[i][1:], self.hist_runs[i], marker='.', linestyle='-', 
-                          color=self.plots_colors[i],  label=run_labels[i])
-    
-            # Subplots 2-(N+1): 2D Histogram for MUSIC
+        ncols = 2 + runs_num  # 2 columns for HMF/PS, rest for individual runs
+
+        fig = plt.figure(figsize=(4 * ncols, 3 * nrows))  # Adjust size as needed
+
+        # Create merged axes for HMF and PS spanning two columns each
+        ax_hmf = plt.subplot2grid((nrows, ncols), (0, 0), colspan=2)
+        ax_ps = plt.subplot2grid((nrows, ncols), (1, 0), colspan=2)
+
+        # Prepare axes for histograms and density fields
+        axs_hist = [plt.subplot2grid((nrows, ncols), (0, 2 + i)) for i in range(runs_num)]
+        axs_dens = [plt.subplot2grid((nrows, ncols), (1, 2 + i)) for i in range(runs_num)]
+
+        colorbar_max = 12
+
+        # Plot data for each run
+        for i in range(self.runs_num):
+            # Plot HMF
+            ax_hmf.plot(self.bin_edges_runs[i][1:], self.hist_runs[i],
+                        marker='.', linestyle='-', color=self.plots_colors[i],
+                        label=self.run_labels[i])
+
+            # Plot 2D halo positions
             X, Y = np.meshgrid(self.xedges_runs[i], self.yedges_runs[i])
-            self.hist2d_runs.append(axs[0,plotid].pcolormesh(X, Y, self.halo_hist_runs[i].T, shading='auto', cmap='Reds'))
-            fig.colorbar(self.hist2d_runs[i], ax=axs[0,plotid], label='Count')
-            self.hist2d_runs[i].set_clim(vmin=0, vmax=colorbar_max)
-            axs[0,plotid].set_xlabel('X')
-            axs[0,plotid].set_ylabel('Y')
-            axs[0,plotid].set_title(f"2D Histogram of halo positions for {run_labels[i]}")
-            print(f"Run {i}: Plotted Halos Histogram")
-    
-            # Subplots (N+3)-(2N): Overdensity fields
-            axs[1,plotid].set_title(f"Density field, {run_labels[i]}")
-    
-            # Set which label to overwrite
-            overwrite = False
-            if run_labels[i] == "hpkvd run z=11":
-                overwrite = True
-    
-            self.runs[i].get_power_spectrum(field_type='rhog', overwrite = overwrite)
-            self.runs[i].plot_field_slice(fig, axs[1,plotid], field_type='rhog', intercept=0)
-    
-            # Subplot (N+2): Halo Mass Function Comparison
-            self.runs_psx.append( self.runs[i].k_from_rhog )
-            self.runs_psy.append( self.runs[i].k_from_rhog**3 / (2 * np.pi**2) * self.runs[i].p_from_rhog )
-            axs[1,0].plot(self.runs_psx[i], self.runs_psy[i], marker='.', 
-                          linestyle='-', color=self.plots_colors[i], 
-                          label=run_labels[i])
-            print(f"Run {i}: Plotted Overdensity")
-    
-        # Format Subplot 1 (HMFs)
-        axs[0,0].set_xlabel('Mass Bin')
-        axs[0,0].set_ylabel('Number of Halos')
-        axs[0,0].set_xscale('log')
-        axs[0,0].set_yscale('log')
-        axs[0,0].set_title('Halo Mass Function')
-        axs[0,0].legend()
-    
-        # Format Subplot (N+1) (Power Spectra)
-        axs[1,0].set_xlabel('k')
-        axs[1,0].set_ylabel('PS')
-        axs[1,0].set_xscale('log')
-        axs[1,0].set_yscale('log')
-        axs[1,0].set_title('Power Spectra comparison')
-        axs[1,0].legend()
-        
-        # Save figure output
-        out_file = os.path.join(out_dir, 'Halo_Analysis_All_Plots.png')
-        plt.show()
+            mesh = axs_hist[i].pcolormesh(X, Y, self.halo_hist_runs[i].T, shading='auto', cmap='Reds')
+            plt.colorbar(mesh, ax=axs_hist[i], label='Count')
+            mesh.set_clim(0, colorbar_max)
+            axs_hist[i].set_title(f"Halo Positions: {self.run_labels[i]}")
+
+            # Plot density field
+            self.runs[i].plot_field_slice(fig, axs_dens[i], field_type='rhog', intercept=0)
+            axs_dens[i].set_title(f"Density: {self.run_labels[i]}")
+
+            # Plot power spectrum
+            ax_ps.plot(self.runs_psx[i], self.runs_psy[i],
+                       marker='.', linestyle='-', color=self.plots_colors[i],
+                       label=self.run_labels[i])
+
+        # Format HMF and PS axes
+        ax_hmf.set(xlabel='Mass Bin', ylabel='Number of Halos',
+                   xscale='log', yscale='log', title='Halo Mass Function')
+        ax_hmf.legend()
+
+        ax_ps.set(xlabel='k', ylabel='PS',
+                  xscale='log', yscale='log', title='Power Spectra Comparison')
+        ax_ps.legend()
+
+        # Adjust layout and save
+        plt.tight_layout()
+        out_file = os.path.join(self.out_dir, 'Halo_Analysis_All_Plots.png')
         plt.savefig(out_file)
+        plt.show()
         print(f"Saved figure to: {out_file}")
         return 0
 
-plot_runs(run_paths, run_labels, out_dir)
+hmfs_class = compare_HMFs(run_paths, run_labels, out_dir)
+hmfs_class.plot_runs()
