@@ -25,36 +25,64 @@ else:
     print(f"Unknown machine: {machine}. Allowed values: cita, vas")
     exit(1)
 
+def makepath(date, redshift, runno):
+    """
+    Takes in date in YYYY-MM-DD format and redshift, returns path to PeakPatch run, 
+    as well as its label
+    """
+    year, month, day = date.split("-")
+    runs_collection_dirname = date + "_highz_tests" + str(runno)
+    runs_dir = os.path.join(total_usr_path, 'pp_runs', year, month, runs_collection_dirname)
+
+    redshift = str(redshift)
+    redshift_dir = "z" + redshift
+    single_redshift_run_dir = os.path.join(runs_dir, redshift_dir)
+    single_redshift_run_dir += "/"
+
+    label = "z=" + redshift
+    return single_redshift_run_dir, label
+
+def make_paths_labels(date, redshifts_list, runno):
+    """
+    Takes in date in YYYY-MM-DD format and redshift, returns list of paths to PeakPatch run, 
+    as well as their labels list
+    """
+    paths = []
+    labels = []
+    for redshift in redshifts_list:
+        path, label = makepath(date, redshift, runno)
+        paths.append(path)
+        labels.append(label)
+    return paths, labels
 
 #run2_label = 'PeakPatch (IPR)'
 
 # ------------------ PARTS CHANGING BEGIN ----------------------
-#run1_path = usr_path + 'pp_runs/interface_run1ic_run1/'
-run1_path = total_usr_path + 'pp_runs/hpkvd-interface-run3/'
-#run1_path = usr_path + 'data/2024-09/cambridge_run_2048/'
-#run2_path = usr_path + 'data/2024-09/cambridge_run_2048/'
-#run2_path = total_usr_path + 'pp_runs/music-interface-run-bbks/'
-#run2_path = total_usr_path + 'pp_runs/music-interface-run/'
-#run2_path = total_usr_path + 'pp_runs/music-interface-run6/'
-run2_path = total_usr_path + 'pp_runs/nong_test_z5/'
-run3_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z8/'
-run4_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z11/'
-run5_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z13/'
+#run1_path = total_usr_path + 'pp_runs/hpkvd-interface-run3/'
+#run2_path = total_usr_path + 'pp_runs/nong_test_z5/'
+#run3_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z8/'
+#run4_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z11/'
+#run5_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z13/'
+#
+#run1_label = "hpkvd run z=0"
+#run2_label = "hpkvd run z=5"
+#run3_label = "hpkvd run z=8"
+#run4_label = "hpkvd run z=11"
+#run5_label = "hpkvd run z=13"
 
-#run1_label = 'PeakPatch (Good)'
-#run1_label = "z=11(?) 2048^3 cells 75 Mpc run (Rsmooth_max=1.577)"
-run1_label = "hpkvd run z=0"
-#run2_label = 'PeakPatch (IPR)'
-#run2_label = 'z=11(?) 4096^3 cells 6.4 Mpc run (Rsmooth_max=0.0668)'
-#run2_label = "music run (BBKS)"
-run2_label = "hpkvd run z=5"
-run3_label = "hpkvd run z=8"
-run4_label = "hpkvd run z=11"
-run5_label = "hpkvd run z=13"
+#run_paths =  [ run1_path,  run2_path,  run3_path,  run4_path,  run5_path  ]
+#run_labels = [ run1_label, run2_label, run3_label, run4_label, run5_label ]
+
+date = "2025-03-04"
+runnos_list = [2, 3, 4]
+boxsize_list = [200, 100, 50]
+redshifts_lists = [ 
+                    [10, 13],
+                    [10, 13, 15, 17],
+                    [8, 10, 13, 15, 17]
+                  ]
+
 # ------------------ PARTS CHANGING END ------------------------
-
-run_paths =  [ run1_path,  run2_path,  run3_path,  run4_path,  run5_path  ]
-run_labels = [ run1_label, run2_label, run3_label, run4_label, run5_label ]
 
 def get_figsize(nrows, ncols, plot_size, bnd_size):
     """
@@ -97,7 +125,7 @@ class compare_HMFs():
         self.out_dir = out_dir
         self.run_labels = run_labels
 
-    def plot_runs(self, hmf_colspan=2):
+    def plot_runs(self, out_name, hmf_colspan=2):
         # Initialize lists to store run data
         self.hist_runs = []
         self.bin_edges_runs = []
@@ -151,7 +179,7 @@ class compare_HMFs():
         axs_hist = [plt.subplot2grid((nrows, ncols), (0, hmf_colspan + i)) for i in range(self.runs_num)]
         axs_dens = [plt.subplot2grid((nrows, ncols), (1, ps_colspan + i)) for i in range(self.runs_num)]
 
-        colorbar_max = 12
+        colorbar_max = 6
 
         # Plot data for each run
         for i in range(self.runs_num):
@@ -187,11 +215,20 @@ class compare_HMFs():
 
         # Adjust layout and save
         plt.tight_layout()
-        out_file = os.path.join(self.out_dir, 'Halo_Analysis_All_Plots.png')
+        out_file = os.path.join(self.out_dir, out_name)
         plt.savefig(out_file)
         plt.show()
         print(f"Saved figure to: {out_file}")
         return 0
 
-hmfs_class = compare_HMFs(run_paths, run_labels, out_dir)
-hmfs_class.plot_runs()
+def make_plots_for_several_run_groups(date, redshifts_lists, runnos_list, boxsize_list):
+    for i, runno in enumerate(runnos_list):
+        redshifts_list = redshifts_lists[i]
+        boxsize = boxsize_list[i]
+        out_name = 'Halo_Analysis_All_Plots_' + str(boxsize) + '_Mpc.png'
+
+        run_paths, run_labels = make_paths_labels(date, redshifts_list, runno)
+        hmfs_class = compare_HMFs(run_paths, run_labels, out_dir)
+        hmfs_class.plot_runs(out_name=out_name)
+
+make_plots_for_several_run_groups(date, redshifts_lists, runnos_list, boxsize_list)
