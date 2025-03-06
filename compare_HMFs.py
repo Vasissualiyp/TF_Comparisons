@@ -1,6 +1,7 @@
 usr_path = '/home/vasilii/research/software_src/'
 usr_path = '../../peakpatch/python/'
 import os, sys, math, numpy as np
+from astropy import units as u
 import matplotlib.pyplot as plt
 sys.path.insert(0, usr_path+'peakpatch/python')
 from peakpatchtools import PeakPatch
@@ -73,14 +74,28 @@ def make_paths_labels(date, redshifts_list, runno):
 #run_paths =  [ run1_path,  run2_path,  run3_path,  run4_path,  run5_path  ]
 #run_labels = [ run1_label, run2_label, run3_label, run4_label, run5_label ]
 
-date = "2025-03-04"
-runnos_list = [2, 3, 4]
-boxsize_list = [200, 100, 50]
+date = "2025-03-05"
+runnos_list =  [1,  2,  3, 4, 5]
+boxsize_list = [20, 10, 5, 2, 1]
 redshifts_lists = [ 
-                    [10, 13],
                     [10, 13, 15, 17],
-                    [8, 10, 13, 15, 17]
+                    [10, 13, 15, 17],
+                    [10, 13, 15, 17],
+                    [10, 13, 15, 17],
+                    [10, 13, 15, 17]
+                    #[10, 13, 15, 17, 20, 23], 
+                    #[10, 13, 15, 17, 20, 23, 26, 30]
                   ]
+#date = "2025-03-04"
+#runnos_list = [2, 3, 4]
+#boxsize_list = [200, 100, 50]
+#redshifts_lists = [ 
+#                    [10, 13],
+#                    [10, 13, 15],
+#                    [10, 13, 15, 17]
+#                    #[10, 13, 15, 17, 20, 23], 
+#                    #[10, 13, 15, 17, 20, 23, 26, 30]
+#                  ]
 
 # ------------------ PARTS CHANGING END ------------------------
 
@@ -125,7 +140,34 @@ class compare_HMFs():
         self.out_dir = out_dir
         self.run_labels = run_labels
 
-    def plot_runs(self, out_name, hmf_colspan=2):
+    def compute_hmf(self, run, i, cutoff_factor=4, hmf_type='dndogm'):
+            hist_run, bin_edges_run = run.hmf(hmf_type=hmf_type)
+            # Set up cutoff to avoid plotting "step-like" data at low-m limit
+            size_limit = cutoff_factor * run.cellsize * u.Mpc
+            hmf_x_left_lim = run.rho_crit * 4/3 * np.pi * size_limit**3 / u.solMass
+            # Filter out values to the right of cutoff
+            mask = bin_edges_run[1:] >= hmf_x_left_lim
+            filtered_bin_edges_run = bin_edges_run[1:][mask]
+            filtered_hist_run = hist_run[mask]
+            # Append the data
+            self.hist_runs.append(filtered_hist_run)
+            self.bin_edges_runs.append(filtered_bin_edges_run)
+            print(f"Run {i}: HMF computed")
+
+    def compute_density_field_and_ps(self, run, i):
+        run.add_field(field_type='rhog')
+        run.get_power_spectrum(field_type='rhog', overwrite=(self.run_labels[i] == "hpkvd run z=11"))
+        self.runs_psx.append(run.k_from_rhog)
+        self.runs_psy.append(run.k_from_rhog**3 / (2 * np.pi**2) * run.p_from_rhog)
+
+    def compute_2d_halo_hist(self, run, i):
+        halo_hist_run, xedges_run, yedges_run = run.halo_hist2d()
+        self.halo_hist_runs.append(halo_hist_run)
+        self.xedges_runs.append(xedges_run)
+        self.yedges_runs.append(yedges_run)
+        print(f"Run {i}: 2D halo histogram computed")
+
+    def plot_runs(self, out_name, hmf_type='dndlogm', hmf_colspan=2):
         # Initialize lists to store run data
         self.hist_runs = []
         self.bin_edges_runs = []
@@ -137,32 +179,15 @@ class compare_HMFs():
 
         ps_colspan = hmf_colspan
 
-        # Process each run first (compute HMFs, fields, etc.)
+        # Process each run
         for i in range(self.runs_num):
             # Load run data
             run = PeakPatch(run_dir=self.run_paths[i], params_file=self.run_paths[i] + 'param/parameters.ini')
             run.add_halos()
             print(f"Run {i}: Halos added")
-
-            # Compute Halo Mass Function
-            hist_run, bin_edges_run = run.hmf(hmf_type='dn')
-            self.hist_runs.append(hist_run)
-            self.bin_edges_runs.append(bin_edges_run)
-            print(f"Run {i}: HMF computed")
-
-            # Compute density field and power spectrum
-            run.add_field(field_type='rhog')
-            run.get_power_spectrum(field_type='rhog', overwrite=(self.run_labels[i] == "hpkvd run z=11"))
-            self.runs_psx.append(run.k_from_rhog)
-            self.runs_psy.append(run.k_from_rhog**3 / (2 * np.pi**2) * run.p_from_rhog)
-
-            # Compute 2D halo histogram
-            halo_hist_run, xedges_run, yedges_run = run.halo_hist2d()
-            self.halo_hist_runs.append(halo_hist_run)
-            self.xedges_runs.append(xedges_run)
-            self.yedges_runs.append(yedges_run)
-            print(f"Run {i}: 2D halo histogram computed")
-
+            self.compute_hmf(run, i, cutoff_factor=4, hmf_type=hmf_type)
+            self.compute_density_field_and_ps(run, i)
+            self.compute_2d_halo_hist(run, i)
             self.runs.append(run)
 
         # Create figure with adjusted layout
@@ -184,7 +209,7 @@ class compare_HMFs():
         # Plot data for each run
         for i in range(self.runs_num):
             # Plot HMF
-            ax_hmf.plot(self.bin_edges_runs[i][1:], self.hist_runs[i],
+            ax_hmf.plot(self.bin_edges_runs[i], self.hist_runs[i],
                         marker='.', linestyle='-', color=self.plots_colors[i],
                         label=self.run_labels[i])
 
@@ -204,8 +229,16 @@ class compare_HMFs():
                        marker='.', linestyle='-', color=self.plots_colors[i],
                        label=self.run_labels[i])
 
+        # Set name for y-axis of HMF
+        if hmf_type == 'dndlogm':
+            hmf_y_label = "$\mathrm{d} n / \mathrm{d}  \log M$"
+        elif hmf_type == 'dn':
+            hmf_y_label = "Number of halos"
+        else:
+            hmf_y_label = "HMF (unknown type)"
+
         # Format HMF and PS axes
-        ax_hmf.set(xlabel='Mass Bin', ylabel='Number of Halos',
+        ax_hmf.set(xlabel="$\log M$, (Mpc)", ylabel=hmf_y_label,
                    xscale='log', yscale='log', title='Halo Mass Function')
         ax_hmf.legend()
 
@@ -225,7 +258,7 @@ def make_plots_for_several_run_groups(date, redshifts_lists, runnos_list, boxsiz
     for i, runno in enumerate(runnos_list):
         redshifts_list = redshifts_lists[i]
         boxsize = boxsize_list[i]
-        out_name = 'Halo_Analysis_All_Plots_' + str(boxsize) + '_Mpc.png'
+        out_name = '2025/Halo_Analysis_All_Plots_' + str(boxsize) + '_Mpc.png'
 
         run_paths, run_labels = make_paths_labels(date, redshifts_list, runno)
         hmfs_class = compare_HMFs(run_paths, run_labels, out_dir)
