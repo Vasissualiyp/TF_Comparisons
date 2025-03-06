@@ -12,6 +12,46 @@ out_path_cita =  '/cita/d/www/home/vpustovoit/plots'
 
 machine = 'cita'
 
+# ------------------ PARTS CHANGING BEGIN ----------------------
+#run1_path = total_usr_path + 'pp_runs/hpkvd-interface-run3/'
+#run2_path = total_usr_path + 'pp_runs/nong_test_z5/'
+#run3_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z8/'
+#run4_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z11/'
+#run5_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z13/'
+#
+#run1_label = "hpkvd run z=0"
+#run2_label = "hpkvd run z=5"
+#run3_label = "hpkvd run z=8"
+#run4_label = "hpkvd run z=11"
+#run5_label = "hpkvd run z=13"
+
+#run_paths =  [ run1_path,  run2_path,  run3_path,  run4_path,  run5_path  ]
+#run_labels = [ run1_label, run2_label, run3_label, run4_label, run5_label ]
+
+date = "2025-03-05"
+runnos_list =  [4] #[1,  2,  3, 4, 5]
+boxsize_list = [2] #[20, 10, 5, 2, 1]
+redshifts_lists = [ 
+                    #[10, 13, 15, 17],
+                    [10, 13, 15, 17]
+                    #[10, 13, 15, 17],
+                    #[10, 13, 15, 17],
+                    #[10, 13, 15, 17]
+                    #[10, 13, 15, 17, 20, 23], 
+                    #[10, 13, 15, 17, 20, 23, 26, 30]
+                  ]
+#date = "2025-03-04"
+#runnos_list = [2, 3, 4]
+#boxsize_list = [200, 100, 50]
+#redshifts_lists = [ 
+#                    [10, 13],
+#                    [10, 13, 15],
+#                    [10, 13, 15, 17]
+#                    #[10, 13, 15, 17, 20, 23], 
+#                    #[10, 13, 15, 17, 20, 23, 26, 30]
+#                  ]
+
+# ------------------ PARTS CHANGING END ------------------------
 
 if machine == 'cita':
     total_usr_path = usr_path_cita
@@ -58,46 +98,6 @@ def make_paths_labels(date, redshifts_list, runno):
 
 #run2_label = 'PeakPatch (IPR)'
 
-# ------------------ PARTS CHANGING BEGIN ----------------------
-#run1_path = total_usr_path + 'pp_runs/hpkvd-interface-run3/'
-#run2_path = total_usr_path + 'pp_runs/nong_test_z5/'
-#run3_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z8/'
-#run4_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z11/'
-#run5_path = total_usr_path + 'pp_runs/2025-01-27-niagara/z13/'
-#
-#run1_label = "hpkvd run z=0"
-#run2_label = "hpkvd run z=5"
-#run3_label = "hpkvd run z=8"
-#run4_label = "hpkvd run z=11"
-#run5_label = "hpkvd run z=13"
-
-#run_paths =  [ run1_path,  run2_path,  run3_path,  run4_path,  run5_path  ]
-#run_labels = [ run1_label, run2_label, run3_label, run4_label, run5_label ]
-
-date = "2025-03-05"
-runnos_list =  [1,  2,  3, 4, 5]
-boxsize_list = [20, 10, 5, 2, 1]
-redshifts_lists = [ 
-                    [10, 13, 15, 17],
-                    [10, 13, 15, 17],
-                    [10, 13, 15, 17],
-                    [10, 13, 15, 17],
-                    [10, 13, 15, 17]
-                    #[10, 13, 15, 17, 20, 23], 
-                    #[10, 13, 15, 17, 20, 23, 26, 30]
-                  ]
-#date = "2025-03-04"
-#runnos_list = [2, 3, 4]
-#boxsize_list = [200, 100, 50]
-#redshifts_lists = [ 
-#                    [10, 13],
-#                    [10, 13, 15],
-#                    [10, 13, 15, 17]
-#                    #[10, 13, 15, 17, 20, 23], 
-#                    #[10, 13, 15, 17, 20, 23, 26, 30]
-#                  ]
-
-# ------------------ PARTS CHANGING END ------------------------
 
 def get_figsize(nrows, ncols, plot_size, bnd_size):
     """
@@ -167,6 +167,26 @@ class compare_HMFs():
         self.yedges_runs.append(yedges_run)
         print(f"Run {i}: 2D halo histogram computed")
 
+    def plot_hmf(self, ax_hmf, i):
+        ax_hmf.plot(self.bin_edges_runs[i], self.hist_runs[i],
+                    marker='.', linestyle='-', color=self.plots_colors[i],
+                    label=self.run_labels[i])
+    def plot_2d_halo_pos(self, axs_hist, i):
+        X, Y = np.meshgrid(self.xedges_runs[i], self.yedges_runs[i])
+        mesh = axs_hist[i].pcolormesh(X, Y, self.halo_hist_runs[i].T, shading='auto', cmap='Reds')
+        plt.colorbar(mesh, ax=axs_hist[i], label='Count')
+        mesh.set_clim(0, self.colorbar_max)
+        axs_hist[i].set_title(f"Halo Positions: {self.run_labels[i]}")
+
+    def plot_density_field(self, axs_dens, fig, i):
+        self.runs[i].plot_field_slice(fig, axs_dens[i], field_type='rhog', intercept=0)
+        axs_dens[i].set_title(f"Density: {self.run_labels[i]}")
+
+    def plot_power_spectrum(self, ax_ps, i):
+        ax_ps.plot(self.runs_psx[i], self.runs_psy[i],
+                   marker='.', linestyle='-', color=self.plots_colors[i],
+                   label=self.run_labels[i])
+
     def plot_runs(self, out_name, hmf_type='dndlogm', hmf_colspan=2):
         # Initialize lists to store run data
         self.hist_runs = []
@@ -204,30 +224,14 @@ class compare_HMFs():
         axs_hist = [plt.subplot2grid((nrows, ncols), (0, hmf_colspan + i)) for i in range(self.runs_num)]
         axs_dens = [plt.subplot2grid((nrows, ncols), (1, ps_colspan + i)) for i in range(self.runs_num)]
 
-        colorbar_max = 6
+        self.colorbar_max = 6
 
         # Plot data for each run
         for i in range(self.runs_num):
-            # Plot HMF
-            ax_hmf.plot(self.bin_edges_runs[i], self.hist_runs[i],
-                        marker='.', linestyle='-', color=self.plots_colors[i],
-                        label=self.run_labels[i])
-
-            # Plot 2D halo positions
-            X, Y = np.meshgrid(self.xedges_runs[i], self.yedges_runs[i])
-            mesh = axs_hist[i].pcolormesh(X, Y, self.halo_hist_runs[i].T, shading='auto', cmap='Reds')
-            plt.colorbar(mesh, ax=axs_hist[i], label='Count')
-            mesh.set_clim(0, colorbar_max)
-            axs_hist[i].set_title(f"Halo Positions: {self.run_labels[i]}")
-
-            # Plot density field
-            self.runs[i].plot_field_slice(fig, axs_dens[i], field_type='rhog', intercept=0)
-            axs_dens[i].set_title(f"Density: {self.run_labels[i]}")
-
-            # Plot power spectrum
-            ax_ps.plot(self.runs_psx[i], self.runs_psy[i],
-                       marker='.', linestyle='-', color=self.plots_colors[i],
-                       label=self.run_labels[i])
+            self.plot_hmf(ax_hmf, i)
+            self.plot_2d_halo_pos(axs_hist, i)
+            self.plot_density_field(axs_dens, fig, i)
+            self.plot_power_spectrum(ax_ps, i)
 
         # Set name for y-axis of HMF
         if hmf_type == 'dndlogm':
